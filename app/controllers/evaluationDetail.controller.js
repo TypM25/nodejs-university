@@ -46,7 +46,7 @@ exports.createEvaluationDetail = async (req, res) => {
             }
         })
         if (checkData.length > 0) {
-            res.status(409).send({
+            return res.status(409).send({
                 message: "Already create evaluationDetail with this question.",
                 data: null,
                 status_code: 409
@@ -95,6 +95,22 @@ exports.createMultiEvaluationDetail = async (req, res) => {
                 status_code: check_student_teacher.status_code
             });
         }
+
+        const checkAlreadyVote = await EvaluationDetail.findAll({
+            where: {
+                student_id: item.student_id,
+                teacher_id: item.teacher_id,
+                term_id: item.term_id
+            }
+        })
+        if (checkAlreadyVote.length === 10) {
+            return res.status(409).send({
+                message: "This student is already answer.",
+                data: null,
+                status_code: 409
+            });
+        }
+
         const checkEvaDetail = await EvaluationDetail.findOne({
             where: {
                 student_id: item.student_id,
@@ -103,11 +119,12 @@ exports.createMultiEvaluationDetail = async (req, res) => {
                 term_id: item.term_id
             }
         })
+
         if (checkEvaDetail) {
-            return res.status(400).send({
+            return res.status(409).send({
                 message: "คุณประเมินอาจารย์คำถามซ้ำ",
                 data: null,
-                status_code: 400
+                status_code: 409
             });
         }
     }
@@ -187,6 +204,68 @@ exports.findEnvaluationDetailById = async (req, res) => {
         });
     }
 }
+
+//########################## CHECK ##########################
+exports.checkAlreadyAnswer = async (req, res) => {
+
+    const student_id = req.body.student_id
+    const teacher_id = req.body.teacher_id
+    const term_id = req.body.term_id
+    let teacherIdArray = [];
+
+    if (Array.isArray(teacher_id)) {
+        teacherIdArray = teacher_id;
+    } else {
+        teacherIdArray = [teacher_id]; // แปลงเป็น array ถ้ามีแค่คนเดียว
+    }
+
+    const inputData = {
+        student_id: student_id,
+        teacher_id: teacherIdArray,
+        term_id: term_id
+    };
+
+    // const check_student_teacher = await studentUtil.checkStudentTeacher(req.body.student_id, req.body.teacher_id)
+    // if (check_student_teacher.canOperated === false) {
+    //     return res.status(check_student_teacher.status_code).send({
+    //         message: check_student_teacher.set_message,
+    //         data: null,
+    //         status_code: check_student_teacher.status_code
+    //     });
+    // }
+
+    try {
+        const checkAlreadyVote = await EvaluationDetail.findAll({
+            where: {
+                student_id: inputData.student_id,
+                teacher_id: {
+                    [Op.in]: inputData.teacher_id
+                },
+                term_id: inputData.term_id
+            }
+        })
+        if (checkAlreadyVote.length === teacherIdArray.length * 10) {
+            return res.status(409).send({
+                message: "This student is already answer.",
+                data: null,
+                status_code: 409
+            });
+        }
+        res.status(200).send({
+            message: "This student is not answer yet.",
+            data: null,
+            status_code: 200
+        });
+    }
+    catch (err) {
+        return res.status(500).send({
+            message: "Error : " + err.message,
+            data: null,
+            status_code: 500
+        });
+    }
+}
+
 //########################## DELETE ##########################
 exports.deleteAllEvaluationDetail = async (req, res) => {
     try {

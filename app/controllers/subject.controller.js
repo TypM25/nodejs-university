@@ -3,6 +3,8 @@ const db = require("../models");
 const dayjs = require('dayjs');
 const { where, cast, col } = require('sequelize');
 
+const searchUtil = require('../utils/search.util.js');
+
 const Subject = db.subject;
 const Op = db.Sequelize.Op;
 const UpdateSubject = db.updateSubject
@@ -85,8 +87,8 @@ exports.findAllSubject = async (req, res) => {
         })
         const formattedResult = result.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
 
@@ -210,7 +212,7 @@ exports.findMultiSubject = async (req, res) => {
                     ]
                 }
             ],
-            order:[['subject_id','ASC']]
+            order: [['subject_id', 'ASC']]
         })
         if (!result || result.length === 0) {
             res.status(200).send({
@@ -239,46 +241,27 @@ exports.findMultiSubject = async (req, res) => {
 exports.searchSubject = async (req, res) => {
     const data = {
         searchType: req.body.searchType,
-        searchData: req.body.searchData
+        searchData: req.body.searchData,
+        sort: req.body.sort
     }
+
+    const cols_name = ['subject_id', 'create_by', 'createdAt', 'subject_name'];
+
+
     let searchCondition = {}
-    if (data.searchType === "subject_id") {
-        searchCondition = where(
-            cast(col('subject_id'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
+
+    if (data.searchData && data.searchType && cols_name.includes(data.searchType)) {
+        searchCondition = searchUtil.setSearchCondition(data.searchType, data.searchData)
     }
-    else if (data.searchType === "create_by") {
-        searchCondition = where(
-            cast(col('create_by'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "createdAt") {
-        searchCondition = where(
-            cast(col('createdAt'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "subject_name") {
-        searchCondition = {
-            subject_name: { [Op.iLike]: `%${data.searchData}%` }
-        };
-    }
+
 
     try {
         if (!data.searchData) {
-            const subject = await Subject.findAll();
+            const subject = await Subject.findAll({ order: [['subject_id', `${data.sort}`]] });
             const formattedResult = subject.map(data => {
                 data = data.get();
-                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
                 return data;
             });
             res.status(200).send({
@@ -289,7 +272,8 @@ exports.searchSubject = async (req, res) => {
         }
 
         const subject = await Subject.findAll({
-            where: searchCondition
+            where: searchCondition,
+            order: [['subject_id', `${data.sort}`]]
         });
         if (!subject) {
             return res.status(404).send({
@@ -301,8 +285,8 @@ exports.searchSubject = async (req, res) => {
 
         const formattedResult = subject.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
         res.status(200).send({

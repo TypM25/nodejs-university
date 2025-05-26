@@ -96,6 +96,9 @@ module.exports = function (app) {
     app.post("/student/find/evaluationDetail", [authJwt.verifyToken, authJwt.isStudent],
         evaluationDetail.findEnvaluationDetailById);
 
+    app.post("/student/check/evaluationDetail", [authJwt.verifyToken, authJwt.isStudent],
+        evaluationDetail.checkAlreadyAnswer);
+
     app.delete("/student/delete/evaluationDetail", [authJwt.verifyToken, authJwt.isStudent],
         evaluationDetail.deleteEvaluationDetail);
 

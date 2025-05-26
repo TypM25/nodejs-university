@@ -116,6 +116,9 @@ module.exports = function (app) {
     app.put("/admin/update/teacher", [authJwt.verifyToken, authJwt.isAdmin],
         teacher.changeTeacherName);
 
+    app.post("/admin/search/teacher", [authJwt.verifyToken, authJwt.isAdmin],
+        teacher.searchTeacher);
+
     //................Admin-GradeTerm...................
     app.get("/admin/all/gradeTerm", [authJwt.verifyToken, authJwt.isAdmin],
         gradeTerm.findAllGradeTerm);
@@ -159,8 +162,11 @@ module.exports = function (app) {
     app.delete("/admin/delete/semester", [authJwt.verifyToken, authJwt.isAdmin],
         semester.deleteSemester);
 
-    app.put("/admin/update/semester/:id", [authJwt.verifyToken, authJwt.isAdmin],
+    app.put("/admin/update/semester", [authJwt.verifyToken, authJwt.isAdmin],
         semester.updateSemester);
+
+    app.post("/admin/search/semester", [authJwt.verifyToken, authJwt.isAdmin],
+        semester.searchSemester);
 
     //................Admin-Question...................
     app.get("/admin/all/question", [authJwt.verifyToken, authJwt.isAdmin],
@@ -203,6 +209,9 @@ module.exports = function (app) {
 
     app.post("/admin/find/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],
         evaluationDetail.findEnvaluationDetailById);
+
+     app.post("/admin/check/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],
+        evaluationDetail.checkAlreadyAnswer);
 
     app.delete("/admin/delete/all/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],
         evaluationDetail.deleteAllEvaluationDetail);

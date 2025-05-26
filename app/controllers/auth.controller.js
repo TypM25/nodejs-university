@@ -71,7 +71,7 @@ exports.signin = async (req, res) => {
 
         //ถ้าหาusernameไม่เจอ
         if (!user) {
-            res.status(404).send({
+            return res.status(404).send({
                 message: "User not found.",
                 data: null,
                 status_code: 404

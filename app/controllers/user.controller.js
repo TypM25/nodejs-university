@@ -5,7 +5,10 @@ const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
 const dayjs = require('dayjs');
 
+const searchUtil = require('../utils/search.util.js');
+
 const User = db.user;
+const Role = db.role;
 
 exports.allAccess = (req, res) => {
     res.status(200).send({
@@ -54,12 +57,18 @@ exports.findAllUser = async (req, res) => {
     const sort = req.body?.sort ? req.body.sort.toUpperCase() : 'ASC';
     try {
         const user = await User.findAll({
+             include: [{
+                model: Role,
+                as: "roles",
+                attributes: ["role_id","name"],
+                through: { attributes: [] },
+            }],
             order: [['user_id', sort]]
         })
         const formattedResult = user.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
 
@@ -145,37 +154,26 @@ exports.findByUsername = async (req, res) => {
 exports.searchUser = async (req, res) => {
     const data = {
         searchType: req.body.searchType,
-        searchData: req.body.searchData
-    }
-    let searchCondition = {}
-    if (data.searchType === "user_id") {
-        searchCondition = where(
-            cast(col('user_id'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "createdAt") {
-        searchCondition = where(
-            cast(col('createdAt'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "username") {
-        searchCondition = { username: { [Op.like]: `%${data.searchData}%` } };
+        searchData: req.body.searchData,
+        sort: req.body.sort || 'ASC',
+    };
+
+    const cols_name = ['user_id', 'createdAt', 'username'];
+
+    let searchCondition = {};
+
+    if (data.searchData && data.searchType && cols_name.includes(data.searchType)) {
+        searchCondition = searchUtil.setSearchCondition(data.searchType, data.searchData);
     }
 
     try {
         if (!data.searchData) {
-            const user = await User.findAll();
+            const user = await User.findAll({ order: [['user_id', `${data.sort}`]] });
 
             const formattedResult = user.map(data => {
                 data = data.get();
-                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
                 return data;
             });
             res.status(200).send({
@@ -184,9 +182,10 @@ exports.searchUser = async (req, res) => {
             })
             return
         }
-
+        //ถ้าsearch
         const user = await User.findAll({
-            where: searchCondition
+            where: searchCondition,
+            order: [['user_id', `${data.sort}`]]
         });
         if (!user) {
             return res.status(404).send({
@@ -198,8 +197,8 @@ exports.searchUser = async (req, res) => {
 
         const formattedResult = user.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
         res.status(200).send({

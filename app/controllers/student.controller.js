@@ -7,8 +7,10 @@ var jwt = require("jsonwebtoken");
 const UpdateStudent = db.updateStudent;
 const dayjs = require('dayjs');
 
+const searchUtil = require('../utils/search.util.js');
 const semesterService = require('../services/semester.service.js');
 const User = db.user;
+const Role = db.role;
 const Student = db.student;
 const Subject = db.subject;
 const SubjectStudent = db.subject_student
@@ -26,34 +28,58 @@ exports.createStudent = async (req, res) => {
         });
         return;
     }
-    const student = {
-        user_id: req.body.user_id ? req.body.user_id : req.user_id,
-        create_by: req.user_id,
-        student_first_name: req.body.student_first_name,
-        student_last_name: req.body.student_last_name,
-        term_id: req.body.term
-    };
-
-    console.log("create by ", student)
-    if (!student.user_id || isNaN(student.user_id) /*เมือ่ไม่ใข่ตัวเลข*/) {
-        return res.status(400).send({
-            message: "Please enter valid id number values.",
-            data: null,
-            status_code: 400
-        });
-    }
-    if (!student.student_first_name || !student.student_last_name) {
-        return res.status(400).send({
-            message: "กรุณากรอกข้อมูลให้ครบ",
-            data: result,
-            status_code: 400
-        });
-    }
     try {
-        const user = await User.findOne({ where: { user_id: student.user_id } })
+        const term = await semesterService.checkSemester()
+        if (!term || !term.activeTerm) {
+            return res.status(200).send({
+                isOpen: false,
+                message: "Do not has active semester.",
+                data: null,
+                status_code: 200
+            });
+        }
+        const student = {
+            user_id: req.body.user_id ? req.body.user_id : req.user_id,
+            create_by: req.user_id,
+            student_first_name: req.body.student_first_name,
+            student_last_name: req.body.student_last_name,
+            term_id: term.activeTerm.term_id
+        };
+
+        if (!student.user_id || isNaN(student.user_id) /*เมือ่ไม่ใข่ตัวเลข*/) {
+            return res.status(400).send({
+                message: "Please enter valid id number values.",
+                data: null,
+                status_code: 400
+            });
+        }
+        if (!student.student_first_name || !student.student_last_name) {
+            return res.status(400).send({
+                message: "กรุณากรอกข้อมูลให้ครบ",
+                data: result,
+                status_code: 400
+            });
+        }
+        const user = await User.findOne({
+            where: { user_id: student.user_id },
+            include: [{
+                model: Role,
+                as: "roles",
+                attributes: ["name"],
+                through: { attributes: [] }
+            }]
+        });
+
         if (!user) {
             return res.status(404).send({
                 message: "Username is not found.",
+                data: null,
+                status_code: 404
+            })
+        }
+        else if (user?.roles.find((r) => r.name !== "student")) {
+            return res.status(404).send({
+                message: "This user is not student role.",
                 data: null,
                 status_code: 404
             })
@@ -126,8 +152,8 @@ exports.findAll = async (req, res) => {
         })
         const formattedResult = result.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
 
@@ -166,7 +192,7 @@ exports.findStudentByStudentId = async (req, res) => {
                 include: [{
                     model: Teacher,
                     as: "teachers",
-                    attributes: ["teacher_id", "teacher_first_name", "teacher_last_name","user_id"],
+                    attributes: ["teacher_id", "teacher_first_name", "teacher_last_name", "user_id"],
 
                 }]
             }]
@@ -215,6 +241,11 @@ exports.findStudentByUserId = async (req, res) => {
                 as: "subjects",
                 attributes: ["subject_id", "subject_name", "credits"],
                 through: { attributes: [] },
+                include: [{
+                    model: Teacher,
+                    as: "teachers",
+                    attributes: ["teacher_id","teacher_first_name","teacher_last_name"],
+                }]
             }]
         })
 
@@ -273,57 +304,26 @@ exports.findGpaStudent = async (req, res) => {
 exports.searchStudent = async (req, res) => {
     const data = {
         searchType: req.body.searchType,
-        searchData: req.body.searchData
-    }
-    let searchCondition = {}
-    if (data.searchType === "student_id") {
-        searchCondition = where(
-            cast(col('student_id'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "create_by") {
-        searchCondition = where(
-            cast(col('create_by'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "user_id") {
-        searchCondition = where(
-            cast(col('user_id'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "createdAt") {
-        searchCondition = where(
-            cast(col('createdAt'), 'TEXT'),
-            {
-                [Op.iLike]: `%${data.searchData}%`
-            }
-        );
-    }
-    else if (data.searchType === "student_first_name") {
-        searchCondition = { student_first_name: { [Op.iLike]: `%${data.searchData}%` } };
-    }
-    else if (data.searchType === "student_last_name") {
-        searchCondition = { student_last_name: { [Op.iLike]: `%${data.searchData}%` } };
+        searchData: req.body.searchData,
+        sort: req.body.sort
     }
 
+    const cols_name = ['student_id', 'create_by', 'user_id', 'createdAt', 'student_first_name', 'student_last_name']
+
+    let searchCondition = {}
+
+    if (data.searchData && data.searchType && cols_name.includes(data.searchType)) {
+        searchCondition = searchUtil.setSearchCondition(data.searchType, data.searchData)
+    }
 
     try {
         if (!data.searchData) {
-            const student = await Student.findAll();
+            const student = await Student.findAll({ order: [['student_id', `${data.sort}`]] });
 
             const formattedResult = student.map(data => {
                 data = data.get();
-                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
                 return data;
             });
             res.status(200).send({
@@ -334,7 +334,8 @@ exports.searchStudent = async (req, res) => {
         }
 
         const student = await Student.findAll({
-            where: searchCondition
+            where: searchCondition,
+            order: [['student_id', `${data.sort}`]]
         });
         if (!student) {
             return res.status(404).send({
@@ -345,8 +346,8 @@ exports.searchStudent = async (req, res) => {
         }
         const formattedResult = student.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
 
@@ -507,7 +508,7 @@ exports.addSubjectByStudent = async (req, res) => {
             const semester_state = await semesterService.checkSemester()
             if (semester_state) {
                 await TermHistory.create({
-                    term_id: semester_state.term_id,
+                    term_id: semester_state.activeTerm.term_id,
                     student_id: id_stud,
                     subject_id: id_sub,
                 });

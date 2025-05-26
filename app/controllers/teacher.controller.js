@@ -1,11 +1,17 @@
-const { where } = require("sequelize");
+const { where, cast, col } = require('sequelize');
 const db = require("../models");
 const dayjs = require('dayjs');
 const Op = db.Sequelize.Op;
 
+const searchUtil = require('../utils/search.util.js');
+const semesterService = require('../services/semester.service.js');
+
 const Teacher = db.teacher;
 const Subject = db.subject;
 const Student = db.student
+const User = db.user
+const Role = db.role
+const RatingTeacher = db.teacherRating
 
 //########################## CREATE ##########################
 exports.createTeacher = async (req, res) => {
@@ -15,7 +21,7 @@ exports.createTeacher = async (req, res) => {
         teacher_last_name: req.body.teacher_last_name,
         create_by: req.user_id,
     }
-    console.log("create_by " + data.create_by); // ตรวจสอบข้อมูลทั้งหมดใน params
+
     if (!data.teacher_first_name || !data.teacher_last_name) {
         res.status(400).send({
             message: "Content can not be empty!",
@@ -26,6 +32,32 @@ exports.createTeacher = async (req, res) => {
     }
 
     try {
+        //ตรวจuser
+        const user = await User.findOne({
+            where: { user_id: data.user_id },
+            include: [{
+                model: Role,
+                as: "roles",
+                attributes: ["name"],
+                through: { attributes: [] }
+            }]
+        });
+
+        if (!user) {
+            return res.status(404).send({
+                message: "Username is not found.",
+                data: null,
+                status_code: 404
+            })
+        }
+        else if (user?.roles.find((r) => r.name !== "teacher")) {
+            return res.status(404).send({
+                message: "This user is not teacher role.",
+                data: null,
+                status_code: 404
+            })
+        }
+
         const oldTeacher = await Teacher.findOne({
             where: {
                 teacher_first_name: data.teacher_first_name,
@@ -39,6 +71,9 @@ exports.createTeacher = async (req, res) => {
                 status_code: 400
             });
         }
+
+
+
         else {
             const result = await Teacher.create(data)
             res.status(200).send({
@@ -62,11 +97,12 @@ exports.findAllTeacher = async (req, res) => {
     try {
         const result = await Teacher.findAll({
             order: [['teacher_id', 'ASC']],
+
         });
         const formattedResult = result.map(data => {
             data = data.get();
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
         res.status(200).send({
@@ -92,8 +128,17 @@ exports.findTeacherByTeacherId = async (req, res) => {
             status_code: 400
         })
     }
+
     try {
-        const result = await Teacher.findByPk(id);
+        const term = await semesterService.checkSemester()
+        const result = await Teacher.findByPk(id, {
+            include: [{
+                model: RatingTeacher,
+                as: "teacherRating",
+                where: { term_id: term.activeTerm.term_id },
+                attributes: ["term_id", "avg_score", "rating_score"],
+            }]
+        });
 
 
         if (result) {
@@ -130,20 +175,16 @@ exports.findTeacherByUserId = async (req, res) => {
         })
     }
     try {
+        const term = await semesterService.checkSemester()
+
         const result = await Teacher.findOne({
             where: { user_id: user_id },
-            // include: [{
-            //     model: Subject,
-            //     as: "subjects",
-            //     attributes: ["subject_id", "subject_name", "credits"],
-            //     through: { attributes: [] }
-            //     // include: [{
-            //     //     model: Student,
-            //     //     as: "students",
-            //     //     attributes: ["student_id", "student_first_name", "student_last_name", "user_id"],
-
-            //     // }]
-            // }]
+            include: [{
+                model: RatingTeacher,
+                as: "teacherRating",
+                where: { term_id: term.activeTerm.term_id },
+                attributes: ["term_id", "avg_score", "rating_score"],
+            }]
         })
 
         if (result) {
@@ -236,6 +277,66 @@ exports.findIsTeacherAddThisSubject = async (req, res) => {
         });
     }
 }
+//########################## SEARCH ##########################
+exports.searchTeacher = async (req, res) => {
+    const data = {
+        searchType: req.body.searchType,
+        searchData: req.body.searchData,
+        sort: req.body.sort
+    }
+
+    const cols_name = ['teacher_id', 'teacher_first_name', 'teacher_last_name', 'user_id', 'create_by', 'createdAt'];
+
+
+    if (data.searchData && data.searchType && cols_name.includes(data.searchType)) {
+        searchCondition = searchUtil.setSearchCondition(data.searchType, data.searchData)
+    }
+
+    try {
+        if (!data.searchData) {
+            const result = await Teacher.findAll({ order: [['teacher_id', `${data.sort}`]] })
+            const formattedResult = result.map(data => {
+                data = data.get();
+                data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+                data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
+                return data;
+            });
+            return res.status(200).send({
+                message: "Fetching successfully.",
+                data: formattedResult,
+                status_code: 200
+            });
+
+        }
+        const result = await Teacher.findAll({
+            where: searchCondition,
+            order: [['teacher_id', `${data.sort}`]]
+        })
+        const formattedResult = result.map(data => {
+            data = data.get();
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
+            return data;
+        });
+        return res.status(200).send({
+            message: "Fetching successfully.",
+            data: formattedResult,
+            status_code: 200
+        });
+
+
+    }
+    catch (err) {
+        res.status(500).send({
+            message: "ERROR : " + err.message,
+            data: null,
+            status_code: 500
+
+        })
+    }
+
+}
+
 
 //########################## REMOVE ##########################
 exports.changeTeacherName = async (req, res) => {

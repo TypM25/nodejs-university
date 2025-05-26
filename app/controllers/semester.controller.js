@@ -4,6 +4,7 @@ const { where, cast, col } = require('sequelize');
 var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
 
+const searchUtil = require('../utils/search.util.js');
 const semesterService = require('../services/semester.service.js');
 const Semester = db.semester
 
@@ -76,10 +77,10 @@ exports.findAllSemester = async (req, res) => {
         const semesters = await Semester.findAll()
         const formattedResult = semesters.map(data => {
             data = data.get();
-            data.start_date = dayjs(data.start_date).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.end_date = dayjs(data.end_date).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
-            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY เวลา HH:mm:ss น.');
+            data.start_date = dayjs(data.start_date).format('DD-MM-YYYY');
+            data.end_date = dayjs(data.end_date).format('DD-MM-YYYY');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
         res.status(200).send({
@@ -130,7 +131,95 @@ exports.findSemesterById = async (req, res) => {
         })
     }
 }
+//########################## SEARCH ##########################
+exports.searchSemester = async (req, res) => {
+    const input_status = {
+        isTrue: req.body.status?.isTrue,
+        isFalse: req.body.status?.isFalse
+    };
+    const status = []
+    if (input_status.isTrue !== input_status.isFalse) {
+        if (input_status.isTrue) status.push(true);
+        if (input_status.isFalse) status.push(false);
+    }
+    // if (input_status.isTrue && input_status.isFalse || !input_status.isTrue && !input_status.isFalse) {
+    //     status.length = 0
+    // }
+    // else {
+    //     if (input_status.isTrue) {
+    //         status.push(true)
+    //     }
+    //     if (input_status.isFalse) {
+    //         status.push(false)
+    //     }
+    // }
+    const data = {
+        searchType: req.body.searchType,
+        searchData: req.body.searchData,
+        sort: req.body.sort || 'ASC',
+        status: status.length === 0 ? null : status[0]
+    };
 
+    const cols_name = ['term_id', 'term_name', 'start_date', 'end_date', 'create_by', 'createdAt', 'updatedAt'];
+
+    let searchCondition = {};
+
+
+    if (data.searchData && data.searchType && cols_name.includes(data.searchType)) {
+        searchCondition = searchUtil.setSearchCondition(data.searchType, data.searchData);
+    }
+
+    console.log('req.body.searchData:', req.body.searchData);
+    console.log('data.searchData:', data.searchData);
+    console.log("==========================================data", data)
+    console.log("==========================================status", data.status)
+
+    try {
+        const term = await Semester.findAll({
+            where: {
+                [Op.and]: [
+                    //... ใช้ได้กับเเค่arrayเท่านั้น
+                    ...(Array.isArray(searchCondition) ? searchCondition : [searchCondition]),
+                    ...(data.status !== null ? [{ is_open: data.status }] : [])
+                ]
+            },
+
+            // where: {
+            //     ...(searchCondition && { [Op.and]: searchCondition }),
+            //     ...(data.status !== null && { is_open: data.status })
+            // },
+            order: [['term_id', `${data.sort}`]]
+        });
+
+        if (!term) {
+            return res.status(404).send({
+                message: "No data.",
+                data: null,
+                status_code: 404
+            })
+        }
+
+        const formattedResult = term.map(data => {
+            data = data.get();
+            data.start_date = dayjs(data.start_date).format('DD-MM-YYYY');
+            data.end_date = dayjs(data.end_date).format('DD-MM-YYYY');
+            data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
+            data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
+            return data;
+        });
+        res.status(200).send({
+            data: formattedResult,
+            status_code: 200
+        })
+    }
+    catch (err) {
+        res.status(500).send({
+            message: "Error : " + err.message,
+            data: null,
+            status_code: 500
+        })
+    }
+}
 
 //########################## CHECK ##########################
 exports.checkSemester = async (req, res) => {
@@ -139,7 +228,7 @@ exports.checkSemester = async (req, res) => {
         if (!term) {
             return res.status(200).send({
                 isOpen: false,
-                message: "No active semester period right now.",
+                message: term.message,
                 data: null,
                 status_code: 200
             });
@@ -148,7 +237,7 @@ exports.checkSemester = async (req, res) => {
         res.status(200).send({
             isOpen: true,
             message: "Semester is currently open.",
-            data: term,
+            data: term.activeTerm,
             status_code: 200
         });
     }
@@ -199,7 +288,7 @@ exports.deleteSemester = async (req, res) => {
 
 //########################## UPDATE ##########################
 exports.updateSemester = async (req, res) => {
-    const id = Number(req.params.id)
+    const id = Number(req.body.id)
     let update_data = {};
     if (req.body.term_id) update_data.term_id = req.body.term_id;
     if (req.body.term_name) update_data.term_name = req.body.term_name;
@@ -222,15 +311,6 @@ exports.updateSemester = async (req, res) => {
             status_code: 404
         });
     }
-
-
-    // if (!update_data.term_id || isNaN((update_data.term_id))) {
-    //     return res.status(400).send({
-    //         message: "Please enter new id.",
-    //         data: null,
-    //         status_code: 400
-    //     })
-    // }
 
     try {
         const update_semester = await Semester.update(update_data, { where: { term_id: id } })

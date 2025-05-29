@@ -6,7 +6,7 @@ const User = db.user;
 //check usernameซ้ำมั้ย
 checkDuplicateUsername = async (req, res, next) => {
   try {
-    //username
+    //ใช้findOne หาwhere username
     let user = await User.findOne({ where: { username: req.body.username } })
     if (user) {
       res.status(400).send({
@@ -53,3 +53,4 @@ const verifySignUp = {
 };
 
 module.exports = verifySignUp;
+                                                                                                                                                                                                                

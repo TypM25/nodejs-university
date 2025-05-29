@@ -182,24 +182,23 @@ exports.findTeacherByUserId = async (req, res) => {
             include: [{
                 model: RatingTeacher,
                 as: "teacherRating",
+                required: false,
                 where: { term_id: term.activeTerm.term_id },
                 attributes: ["term_id", "avg_score", "rating_score"],
             }]
         })
-
-        if (result) {
-            res.status(200).send({
-                data: result,
-                status_code: 200
-            });
-        }
-        else {
-            res.status(404).send({
+        if (!result) {
+            return res.status(404).send({
                 message: "This user_id is not registered as a teacher.",
-                data: null,
+                data: result,
                 status_code: 404
             })
         }
+        res.status(200).send({
+            data: result,
+            status_code: 200
+        });
+
     }
     catch (err) {
         res.status(500).send({
@@ -436,39 +435,36 @@ exports.checkIsTeacherAddThisSubject = async (req, res) => {
     const teacher_id = req.params.teacher_id;
     const subject_id = req.params.subject_id;
     try {
-        const teacher = await Teacher.findByPk(teacher_id);
-        if (teacher) {
-            const subject = await Subject.findByPk(subject_id);
-            if (subject) {
-                if (teacher.subject_id === subject_id) {
-                    return res.status(409).send({
-                        message: "You already added this subject.",
-                        data: null,
-                        status_code: 409
-                    });
-                }
-
-                res.status(200).send({
-                    message: "You can add this subject.",
-                    data: null,
-                    status_code: 200
-                });
-            }
-            else {
-                return res.status(404).send({
-                    message: "Subject id is not found!",
-                    data: null,
-                    status_code: 404
-                });
-            }
+        const teacher = await Teacher.findByPk(teacher_id, {
+            include: [{
+                model: Subject,
+                as: "subjects",
+                where: { subject_id: subject_id },
+                attributes: ["subject_id"],
+                required: false,
+            }]
         }
-        else {
+        );
+        if (!teacher) {
             return res.status(404).send({
-                message: "Teacher id is not found!",
+                message: "Teacher not found.",
                 data: null,
                 status_code: 404
             });
         }
+        if (teacher.subjects !== null) {
+            return res.status(409).send({
+                message: "You already added this subject.",
+                data: null,
+                status_code: 409
+            });
+        }
+
+        res.status(200).send({
+            message: "You can add this subject.",
+            data: null,
+            status_code: 200
+        });
     }
     catch (err) {
         res.status(500).send({

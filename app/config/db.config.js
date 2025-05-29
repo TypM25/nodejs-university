@@ -1,3 +1,4 @@
+//config ใข้เพื่อเขื่อมต่อฐข้อมูล
 module.exports = {
   HOST: "localhost",
   USER: "postgres",

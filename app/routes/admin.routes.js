@@ -23,9 +23,6 @@ module.exports = function (app) {
     app.post("/admin/find/user/id", [authJwt.verifyToken, authJwt.isAdmin],
         user.findByUserId);
 
-    app.post("/admin/find/user", [authJwt.verifyToken, authJwt.isAdmin],
-        user.findByUsername);
-
     app.get("/admin/all/user", [authJwt.verifyToken, authJwt.isAdmin],
         user.findAllUser);
 
@@ -101,9 +98,6 @@ module.exports = function (app) {
     app.post("/admin/create/teacher", [authJwt.verifyToken, authJwt.isAdmin],
         teacher.createTeacher);
 
-    app.post("/admin/add/teacher/subject/:teacher_id/:subject_id", [authJwt.verifyToken, authJwt.isAdmin],
-        teacher.addTeachSubject);
-
     app.get("/admin/all/teacher", [authJwt.verifyToken, authJwt.isAdmin],
         teacher.findAllTeacher);
 
@@ -177,9 +171,6 @@ module.exports = function (app) {
 
     app.post("/admin/create/multi/question", [authJwt.verifyToken, authJwt.isAdmin],
         question.createMultiQuestion);
-
-    app.post("/admin/random/question", [authJwt.verifyToken, authJwt.isAdmin],
-        question.randomQuestion);
 
     //................Admin-Evaluation...................\
     app.post("/admin/create/evaluation", [authJwt.verifyToken, authJwt.isAdmin],

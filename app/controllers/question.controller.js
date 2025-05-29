@@ -127,7 +127,7 @@ exports.findAllQuestion = async (req, res) => {
     }
 }
 
-exports.randomQuestion = async (req, res) => {
+exports.findQuestionById = async (req, res) => {
     const inputCount = req.body.inputCount
     try {
         //นับคำถามทั้งหมด
@@ -159,37 +159,3 @@ exports.randomQuestion = async (req, res) => {
         });
     }
 }
-
-// exports.randomQuestion = async (req, res) => {
-//     // let count = 0;
-//     let listQuestion = [];
-//     //นับเลข
-//     const inputCount = req.body.inputCount
-//     try {
-//         //นับคำถามทั้งหมด
-//         let total_question = await Question.count()
-//         //ถ้ากรอกค่า เเละมีคำถามในDB
-//         if (inputCount && total_question > 0) {
-//             //fetch คำถามทั้งหมด
-//             let questions = await Question.findAll()
-//             listQuestion.push(...questions)
-//             //ลูปทุกคคำถาม
-//             for (let count=0; count <= total_question; count++) {
-//                 return res.status(200).send({
-//                     message: `Question ${count} of ${total_question}`,
-//                     data: listQuestion[count],
-//                     status_code: 200
-//                 });
-//             }
-//         }
-//     }
-//     catch (err) {
-//         return res.status(500).send({
-//             message: err.message,
-//             data: null,
-//             status_code: 500
-//         });
-//     }
-// }
-
-

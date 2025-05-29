@@ -19,13 +19,11 @@ exports.findChatHistory = async (req, res) => {
             },
             order: [['send_time', 'ASC']] // เรียงตามเวลาที่ส่ง
         })
-      
         res.status(200).send({
             message: "Fetching successfully.",
             data: chat,
             status_code: 200
         })
-
     }
     catch (err) {
         res.status(500).send({

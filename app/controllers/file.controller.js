@@ -27,17 +27,14 @@ exports.upload = async (req, res) => {
             where: { user_id: req.user_id }
         });
 
-        // ถ้ามีรูปภาพแล้วให้ลบรูปภาพเก่า (ถ้าต้องการ)
+        // ถ้ามีรูปภาพแล้วให้ลบรูปภาพเก่า 
         if (existingImage) {
-            // หากต้องการลบไฟล์เดิมจาก server
             const fs = require('fs');
-            const oldPath = existingImage.data; // หรือ path ที่คุณเก็บไว้
-            fs.unlinkSync(oldPath); // ลบไฟล์เก่า
-
-            // ลบข้อมูลรูปภาพเก่าใน database
-            await existingImage.destroy();
+            const oldPath = existingImage.data;   // path ของไฟล์เก่า เช่น 'resources/uploads/image.png'
+            fs.unlinkSync(oldPath);              // ลบไฟล์เก่าออกจากโฟลเดอร์
+        
+            await existingImage.destroy();      // ลบข้อมูลรูปภาพเก่าใน database
         }
-
 
         const data = {
             user_id: req.user_id,
@@ -48,9 +45,6 @@ exports.upload = async (req, res) => {
         };
 
         await Image.create(data)
-        // if(!user){
-        //     return 
-        // }
 
         res.status(200).send({
             message: "Uploaded the file successfully: " + req.file.originalname,
@@ -109,10 +103,7 @@ exports.findImage = async (req, res) => {
 };
 
 exports.findMultiImage = async (req, res) => {
-    const raw_id = req.body
-    const userIds = raw_id.map(data => Number(data.user_id));
-
-    console.log("user_id : ", userIds)
+    const userIds = req.body
 
     try {
         const image = await Image.findAll({

@@ -113,6 +113,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
                 status_code: 400
             });
         }
+        //เช็คinputตัวไหน notfound
         const { canOperated, status_code, set_message } = await gradeDetailUtil.checkDataNotfound(item.student_id, item.subject_id, item.term_id, item.score)
         if (!canOperated) {
             return res.status(status_code).send({
@@ -121,7 +122,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
                 status_code: status_code
             });
         }
-
+        //เช็คนิสิตคนนี้ได้ลงทะเบียนวิชานี้มั้ย
         const check_student_subject = await studentUtil.checkIsStudentAddThisSubject(item.student_id, item.subject_id)
         if (check_student_subject.status_code !== 200) {
             return res.status(check_student_subject.status_code).send({
@@ -130,8 +131,9 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
                 status_code: check_student_subject.status_code,
             });
         }
-
+        //หน่วยกิตวิชา
         const credits_sub = await Subject.findByPk(item.subject_id)
+        //เเปลงคะแนนเป็นเกรด
         const cal_gradeDetail = await gradeDetailService.calculateGradeDetail(item.score)
 
         //checkข้อมูลซ้ำ

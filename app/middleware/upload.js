@@ -1,6 +1,6 @@
-const util = require("util");
-const multer = require("multer");
-const maxSize = 2 * 1024 * 1024;
+const util = require("util"); //ใช้สำหรับฟังก์ชันช่วยเหลือ
+const multer = require("multer"); //Lib สำหรับจัดการอัปโหลดไฟล์ใน Express
+const maxSize = 2 * 1024 * 1024; // 2MB
 
 //กำหนดค่าmulterเพื่อใช้กลไก Disk Storage
 let storage = multer.diskStorage({
@@ -21,6 +21,6 @@ let uploadFile = multer({
     limits: { fileSize: maxSize },
 }).single("file");
 
-//ทำให้สามารถใช้มิดเดิลแวร์วัตถุที่ส่งออกร่วมกับasync-await.
+//แปลง multer middleware ให้รองรับ async/await.
 let uploadFileMiddleware = util.promisify(uploadFile);
 module.exports = uploadFileMiddleware;

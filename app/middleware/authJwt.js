@@ -7,27 +7,8 @@ const User = db.user;
 // { ตัวแปร } ดึงค่าเฉพาะ key นั้น ๆ" ออกมาจาก object ใหญ่
 const { TokenExpiredError } = jwt;
 
-const catchError = (err, res) => {
-    //ตรวจสอบว่า err (object) ถูกสร้างมาจาก TokenExpiredError (class หรือ constructor ใด) 
-    if (err instanceof TokenExpiredError) {
-        //ถ้าหมดอายุ
-        return res.status(401).send({
-            message: "Unauthorized! Access Token was expired!",
-            data: null,
-            status_code: 401
-        }); //ไม่ได้รับอนุญาต! โทเค็นการเข้าถึงหมดอายุแล้ว!
-    }
-    //ถ้าไม่หมดอายุ
-    return res.status(401).send({
-        message: "Unauthorized!",
-        data: null,
-        status_code: 401
-    },
 
-    ); //ไม่ได้รับอนุญาต
-}
-
-
+//ตรวจสอบ JWT token ว่าถูกต้องไหม
 verifyToken = (req, res, next) => {
     let token = req.headers["x-access-token"];
 
@@ -58,7 +39,7 @@ verifyToken = (req, res, next) => {
         });
 };
 
-
+//ตรวจว่ามี role ใด role หนึ่งไหม
 isUser = async (req, res, next) => {
     try {
         let user = await User.findByPk(req.user_id)
@@ -71,7 +52,7 @@ isUser = async (req, res, next) => {
                 return;
             }
             res.status(403).send({
-                message: "Require any roles!",
+                message: "Require some role!",
                 data: null,
                 status_code: 403
             });
@@ -79,7 +60,7 @@ isUser = async (req, res, next) => {
         }
         catch {
             res.status(404).send({
-                message: "No this role.",
+                message: "No any roles.",
                 data: null,
                 status_code: 404
             });
@@ -94,18 +75,16 @@ isUser = async (req, res, next) => {
     }
 };
 
-
+//ตรวจว่า role เป็น student
 isStudent = async (req, res, next) => {
     try {
         let user = await User.findByPk(req.user_id)
         try {
             let roles = await user.getRoles()
-            for (let i = 0; i < roles.length; i++) {
-                if (roles[i].name === "student") {
-                    next();
-                    return;
-                }
+            if (roles.some(role => role.name === "student")) {
+                return next();
             }
+
             res.status(403).send({
                 message: "Require student role!",
                 data: null,
@@ -130,17 +109,15 @@ isStudent = async (req, res, next) => {
     }
 };
 
+//ตรวจว่า role เป็น teacher
 isTeacher = async (req, res, next) => {
     try {
         console.log(req.user_id)
         let user = await User.findByPk(req.user_id)
         try {
             let roles = await user.getRoles()
-            for (let i = 0; i < roles.length; i++) {
-                if (roles[i].name === "teacher") {
-                    next();
-                    return;
-                }
+             if (roles.some(role => role.name === "teacher")) {
+                return next();
             }
             res.status(403).send({
                 message: "Require teacher role!",
@@ -166,7 +143,7 @@ isTeacher = async (req, res, next) => {
     }
 };
 
-
+//ตรวจว่า role เป็น admin
 isAdmin = async (req, res, next) => {
     try {
         let user = await User.findByPk(req.user_id)
@@ -174,11 +151,8 @@ isAdmin = async (req, res, next) => {
         console.log(user)
         try {
             let roles = await user.getRoles()
-            for (let i = 0; i < roles.length; i++) {
-                if (roles[i].name === "admin") {
-                    next();
-                    return;
-                }
+              if (roles.some(role => role.name === "admin")) {
+                return next();
             }
             res.status(403).send({
                 message: "Require admin role!",

@@ -7,7 +7,6 @@ const Semester = db.semester
 
 
 exports.checkDataNotfound = async (student_id, teacher_id, term_id) => {
-
     let canOperated = true
     let status_code = 200;
     let set_message = ""

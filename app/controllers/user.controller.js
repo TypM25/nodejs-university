@@ -57,10 +57,10 @@ exports.findAllUser = async (req, res) => {
     const sort = req.body?.sort ? req.body.sort.toUpperCase() : 'ASC';
     try {
         const user = await User.findAll({
-             include: [{
+            include: [{
                 model: Role,
                 as: "roles",
-                attributes: ["role_id","name"],
+                attributes: ["role_id", "name"],
                 through: { attributes: [] },
             }],
             order: [['user_id', sort]]
@@ -148,8 +148,6 @@ exports.findByUsername = async (req, res) => {
     }
 }
 
-
-
 //########################## SEARCH ##########################
 exports.searchUser = async (req, res) => {
     const data = {
@@ -226,6 +224,8 @@ exports.changePassword = async (req, res) => {
         const user = await User.findOne({
             where: { username: data.username }
         })
+
+
         if (!user) {
             return res.status(400).send({
                 message: "Username is not found.",
@@ -233,11 +233,13 @@ exports.changePassword = async (req, res) => {
                 status_code: 400
             })
         }
-
-        await User.update(
-            { password: data.password },
-            { where: { username: data.username } }
-        )
+        
+        user.password = data.password
+        user.save()
+        // await User.update(
+        //     { password: data.password },
+        //     { where: { username: data.username } }
+        // )
         res.status(200).send({
             message: "Changed password successfully!",
             data: null,

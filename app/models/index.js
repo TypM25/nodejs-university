@@ -52,14 +52,12 @@ db.refreshToken = require("../models/refreshToken.model.js")(sequelize, Sequeliz
 
 db.updateStudent = require("./updateStudent.model.js")(sequelize, Sequelize);
 db.updateSubject = require("./updateSubject.model.js")(sequelize, Sequelize);
-db.updateUser = require("./updateUser.model.js")(sequelize, Sequelize);
 
 // belong to ฝั่งที่ "เก็บ foreign key"
 // hasMany hasOne ฝั่งไม่ได้เก็บforeign key แต่มีความสัมพันธ์
 
 // sourceKey: คือ คอลัมน์ใน ตารางต้นทาง ex hasOne hasMany
 // targetKey: คือ คอลัมน์ใน ตารางปลายทาง belongTo
-
 
 //############################################### ROLE USER ###############################################
 //user_role ตารางเชื่อมrole เเละ user 
@@ -75,13 +73,22 @@ db.user.belongsToMany(db.role, {
     foreignKey: "user_id" //PKจริงของusername FKของuser_role 
 })
 
-//userมี column student_id
-db.user.belongsTo(db.student, {
-    foreignKey: 'student_id', // ชื่อคอลลัมจริงๆในstudent ที่ใช้อิงFK
+db.user.hasOne(db.student, {
+    foreignKey: 'user_id',// ชื่อคอลลัมจริงๆในstudent ที่ใช้อิงFK
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+});
+
+db.user.hasOne(db.teacher, {
+    foreignKey: 'user_id',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 
 db.user.hasOne(db.image, {
     foreignKey: 'user_id',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 //############################################### STUDENT ###############################################
 db.student.belongsToMany(db.subject, {
@@ -103,16 +110,22 @@ db.student.belongsTo(db.user, {
 });
 
 db.student.hasMany(db.gradeDetail, {
-    foreignKey: 'student_id'
+    foreignKey: 'student_id',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 
 db.student.hasMany(db.gradeTerm, {
-    foreignKey: 'student_id'
+    foreignKey: 'student_id',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 
 
 db.student.hasMany(db.termHistory, {
-    foreignKey: "student_id"
+    foreignKey: "student_id",
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 })
 
 
@@ -130,14 +143,20 @@ db.subject.belongsTo(db.user, {
 });
 
 db.subject.hasMany(db.gradeDetail, {
-    foreignKey: 'subject_id'
+    foreignKey: 'subject_id',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 
 db.subject.hasMany(db.teacher, {
     foreignKey: 'subject_id',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 db.subject.hasMany(db.termHistory, {
-    foreignKey: "subject_id"
+    foreignKey: "subject_id",
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 })
 
 //############################################### TEACHER ###############################################
@@ -157,12 +176,6 @@ db.teacher.belongsTo(db.user, {
     foreignKey: 'create_by',
     targetKey: 'user_id'
 });
-
-
-// db.teacher.belongsTo(db.user, {
-//     foreignKey: 'create_by',
-//     targetKey: 'user_id'
-// });
 
 //.............teacher_teacherRating.............
 db.teacher.hasOne(db.teacherRating, {
@@ -206,18 +219,7 @@ db.updateSubject.belongsTo(db.user, {
     targetKey: 'username'
 });
 
-//.............updateUser.............
-db.updateUser.belongsTo(db.user, {
-    // มีคอลัมน์ update_by เป็น Foreign Key ที่เชื่อมกับ user.username
-    foreignKey: 'update_by',
-    targetKey: 'username'
-});
 
-db.updateUser.belongsTo(db.user, {
-    // มีคอลัมน์ student_id เป็น Foreign Key ที่เชื่อมกับ student.student_id
-    foreignKey: 'username',
-    targetKey: 'username'
-});
 //############################################### IMAGE ###############################################
 db.image.belongsTo(db.user, {
     foreignKey: 'user_id',  // FK ที่อยู่ใน teacher
@@ -272,7 +274,6 @@ db.evaluation.belongsTo(db.teacher, {
 //############################################### TeacherRating ###############################################
 db.teacherRating.belongsTo(db.teacher, {
     foreignKey: 'teacher_id',
-    onDelete: 'CASCADE'
 });
 
 //############################################### REFRESH ###############################################

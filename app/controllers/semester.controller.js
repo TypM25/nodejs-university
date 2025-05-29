@@ -288,14 +288,16 @@ exports.deleteSemester = async (req, res) => {
 
 //########################## UPDATE ##########################
 exports.updateSemester = async (req, res) => {
-    const id = Number(req.body.id)
-    let update_data = {};
-    if (req.body.term_id) update_data.term_id = req.body.term_id;
-    if (req.body.term_name) update_data.term_name = req.body.term_name;
-    if (req.body.start_date) update_data.start_date = req.body.start_date;
-    if (req.body.end_date) update_data.end_date = req.body.end_date;
+    const id = req.body.id
+    //รองรับค่าที่ไม่ได้กรอกเข้ามา
+    const update_data = {
+        ...(req.body.term_id && { term_id: req.body.term_id }),
+        ...(req.body.term_name && { term_name: req.body.term_name }),
+        ...(req.body.start_date && { start_date: req.body.start_date }),
+        ...(req.body.end_date && { end_date: req.body.end_date }),
+    };
 
-    if (!id || isNaN((id)) || id === 0) {
+    if (!id || isNaN((id))) {
         return res.status(400).send({
             message: "Please enter valid number values.",
             data: null,
@@ -303,16 +305,26 @@ exports.updateSemester = async (req, res) => {
         })
     }
 
-    const findTermId = await Semester.findByPk(id)
-    if (!findTermId) {
-        return res.status(404).send({
-            message: "Term not found.",
-            data: null,
-            status_code: 404
-        });
-    }
-
     try {
+        const findTermId = await Semester.findByPk(id)
+        if (!findTermId) {
+            return res.status(404).send({
+                message: "Term not found.",
+                data: null,
+                status_code: 404
+            });
+        }
+        //เขียนแบบนี้จะไม่สามารถเปลี่ยน PKได้
+        // console.log(findTermId)
+        // for (const [key, value] of Object.entries(update_data)) {
+        //     if (findTermId[key] !== value) {
+        //         findTermId[key] = value;
+        //     }
+        // }
+        // await findTermId.save();
+
+
+
         const update_semester = await Semester.update(update_data, { where: { term_id: id } })
         res.status(200).send({
             message: "Update term sucessfully.",

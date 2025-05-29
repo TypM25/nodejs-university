@@ -29,8 +29,6 @@ exports.createEnvaluation = async (req, res) => {
     }
     
     try {
-
-
         // const checkData = await Evaluation.findAll({
         //     where:
         //     {

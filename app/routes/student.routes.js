@@ -61,12 +61,9 @@ module.exports = function (app) {
     app.post("/student/find/multi/subject", [authJwt.verifyToken, authJwt.isStudent],
         subject.findMultiSubject);
 
-    //................Student-Subject...................
     app.post("/student/add/subject/:student_id/:subject_id", [authJwt.verifyToken, authJwt.isStudent],
         student.addSubjectByStudent)
 
-    app.get("/student/find/subject/:id", [authJwt.verifyToken, authJwt.isStudent],
-        subject.findSubjectById);
     //................Student-Semester...................
     app.get("/student/check/semester", [authJwt.verifyToken, authJwt.isStudent],
         semester.checkSemester);
@@ -79,9 +76,6 @@ module.exports = function (app) {
 
     app.post("/student/create/multi/question", [authJwt.verifyToken, authJwt.isStudent],
         question.createMultiQuestion);
-
-    app.post("/student/random/question", [authJwt.verifyToken, authJwt.isStudent],
-        question.randomQuestion);
 
     //................Admin-EvaluationDetail...................\
     app.post("/student/create/single/evaluationDetail", [authJwt.verifyToken, authJwt.isStudent],

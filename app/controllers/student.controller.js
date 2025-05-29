@@ -196,7 +196,6 @@ exports.findStudentByStudentId = async (req, res) => {
 
                 }]
             }]
-
         })
 
         if (result) {
@@ -244,7 +243,7 @@ exports.findStudentByUserId = async (req, res) => {
                 include: [{
                     model: Teacher,
                     as: "teachers",
-                    attributes: ["teacher_id","teacher_first_name","teacher_last_name"],
+                    attributes: ["teacher_id", "teacher_first_name", "teacher_last_name"],
                 }]
             }]
         })
@@ -629,9 +628,6 @@ exports.checkIsStudentAddThisSubject = async (req, res) => {
         }
 
         let result = studentMixSubject.toJSON()
-        // console.log("studentMixSubject --> ", studentMixSubject)
-        // console.log("result -->  ", result)
-
 
         let subject = result.subjects.filter((s) => {
             return s.subject_id === id_sub

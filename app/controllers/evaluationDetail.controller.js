@@ -78,15 +78,26 @@ exports.createMultiEvaluationDetail = async (req, res) => {
         question_id: Number(data.question_id),
         score: Number(data.score),
     }));
+    //ถ้ายังไม่ครบ10 
+    if (inputData.length !== 10) {
+        return res.status(400).send({
+            message: "กรุณาประเมินทุกข้อ",
+            data: null,
+            status_code: 400
+        });
+    }
     for (let item of inputData) {
+        //เช็คข้อมูลที่ไม่มีในdb
         const { canOperated, status_code, set_message } = await evaluationDetailUtil.checkDataNotfound(item.student_id, item.teacher_id, item.term_id, item.question_id)
         if (!canOperated) {
             return res.status(status_code).send({
                 message: set_message,
                 data: null,
                 status_code: status_code
+
             });
         }
+        //เช็คว่านิสิตได้เรียนกับครูคนนี้มั้ย
         const check_student_teacher = await studentUtil.checkStudentTeacher(item.student_id, item.teacher_id)
         if (check_student_teacher.canOperated === false) {
             return res.status(check_student_teacher.status_code).send({
@@ -95,7 +106,7 @@ exports.createMultiEvaluationDetail = async (req, res) => {
                 status_code: check_student_teacher.status_code
             });
         }
-
+        //เช็คว่าตอบ10 คำถามไปยัง
         const checkAlreadyVote = await EvaluationDetail.findAll({
             where: {
                 student_id: item.student_id,
@@ -103,6 +114,7 @@ exports.createMultiEvaluationDetail = async (req, res) => {
                 term_id: item.term_id
             }
         })
+        //ถ้าครบ
         if (checkAlreadyVote.length === 10) {
             return res.status(409).send({
                 message: "This student is already answer.",
@@ -110,7 +122,7 @@ exports.createMultiEvaluationDetail = async (req, res) => {
                 status_code: 409
             });
         }
-
+        //เช็คตอบคำถามซ้ำ
         const checkEvaDetail = await EvaluationDetail.findOne({
             where: {
                 student_id: item.student_id,
@@ -119,7 +131,7 @@ exports.createMultiEvaluationDetail = async (req, res) => {
                 term_id: item.term_id
             }
         })
-
+        //ถ้าซ้ำ
         if (checkEvaDetail) {
             return res.status(409).send({
                 message: "คุณประเมินอาจารย์คำถามซ้ำ",
@@ -129,13 +141,6 @@ exports.createMultiEvaluationDetail = async (req, res) => {
         }
     }
 
-    if (inputData.length !== 10) {
-        return res.status(400).send({
-            message: "กรุณาประเมินทุกข้อ",
-            data: null,
-            status_code: 400
-        });
-    }
     try {
         const evaluation_detail = await EvaluationDetail.bulkCreate(inputData, {
             individualHooks: true // เรียกใช้ afterCreate สำหรับแต่ละรายการ

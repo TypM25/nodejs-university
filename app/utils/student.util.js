@@ -19,6 +19,7 @@ exports.checkStudentTeacher = async (student_id, teacher_id) => {
                         {
                             model: Teacher,
                             as: 'teachers',
+                            // where: { teacher_id: teacher_id },
                             attributes: ["teacher_id", "teacher_first_name", "teacher_last_name"]
                         }
                     ]
@@ -26,9 +27,6 @@ exports.checkStudentTeacher = async (student_id, teacher_id) => {
             ]
         }
     )
-    // const hasTeacher = result.subjects.some(
-    //     sub => sub.teachers && sub.teachers.length > 0
-    // );
     //ถ้าไม่มีวิชา
     if (result.subjects.length === 0) {
         return {
@@ -37,10 +35,8 @@ exports.checkStudentTeacher = async (student_id, teacher_id) => {
             set_message: "This student is not enroll any subject."
         };
     }
-
-    const get_teacher_id = result.subjects
-        .map(sub => sub.teachers.map(teacher => teacher.teacher_id))
-        .flat();
+    //หาidของอาจารย์ทั้งหมด
+    const get_teacher_id = result.subjects.flatMap(sub => sub.teachers.map(teacher => teacher.teacher_id))
 
     const check_teacher_id = get_teacher_id.includes(teacher_id)
     if (!check_teacher_id) {

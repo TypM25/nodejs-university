@@ -1,10 +1,11 @@
+require('dotenv').config();
 //config ใข้เพื่อเขื่อมต่อฐข้อมูล
 module.exports = {
-  HOST: "localhost",
-  USER: "postgres",
-  PASSWORD: "pin555",
-  DB: "test_student_subject",
-  dialect: "postgres",
+  HOST: process.env.DB_HOST,
+  USER: process.env.DB_USER,
+  PASSWORD: process.env.DB_PASSWORD,
+  DB: process.env.DB_NAME,
+  dialect: process.env.DB_DIALECT,
   pool: {
     max: 5,
     min: 0,

@@ -1,0 +1,5 @@
+# ทุกไฟล์ในconfigs
+/app/config/*.js
+
+# envทุกไฟล์
+.env*

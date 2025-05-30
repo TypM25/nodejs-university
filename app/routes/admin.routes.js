@@ -5,6 +5,7 @@ const subject = require("../controllers/subject.controller.js");
 const teacher = require("../controllers/teacher.controller.js");
 const auth = require("../controllers/auth.controller.js");
 const user = require("../controllers/user.controller.js");
+const role = require("../controllers/role.controller.js");
 const semester = require("../controllers/semester.controller.js");
 const question = require("../controllers/question.controller.js");
 const evaluation = require("../controllers/evaluation.controller.js");
@@ -37,7 +38,12 @@ module.exports = function (app) {
 
     app.post("/admin/search/user", [authJwt.verifyToken, authJwt.isAdmin],
         user.searchUser);
+    //................Admin-Role...................
+    app.post("/admin/create/role", [authJwt.verifyToken, authJwt.isAdmin],
+        role.createRole);
 
+    app.get("/admin/all/role", [authJwt.verifyToken, authJwt.isAdmin],
+        role.AllRole);
     //................Admin-Student...................
     app.post("/admin/create/student", [authJwt.verifyToken, authJwt.isAdmin],
         student.createStudent);
@@ -201,7 +207,7 @@ module.exports = function (app) {
     app.post("/admin/find/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],
         evaluationDetail.findEnvaluationDetailById);
 
-     app.post("/admin/check/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],
+    app.post("/admin/check/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],
         evaluationDetail.checkAlreadyAnswer);
 
     app.delete("/admin/delete/all/evaluationDetail", [authJwt.verifyToken, authJwt.isAdmin],

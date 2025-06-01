@@ -32,9 +32,9 @@ verifyToken = (req, res, next) => {
 
                 });
             }
-            console.log(decoded)
             req.username = decoded.username;
             req.user_id = decoded.user_id;
+            console.log('Decoded token:', decoded);
             next();
         });
 };

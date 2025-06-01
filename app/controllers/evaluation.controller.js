@@ -5,13 +5,12 @@ var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
 
 const evaluationService = require('../services/evaluation.service.js');
-const evaluationUtil = require('../utils/evaluation.util.js');
 
 const Evaluation = db.evaluation
 
 //########################## CREATE ##########################
 exports.createEnvaluation = async (req, res) => {
-    const { canOperated, status_code, set_message } = await evaluationUtil.checkDataNotfound(req.body.student_id, req.body.teacher_id, req.body.term_id)
+    const { canOperated, status_code, set_message } = await evaluationService.checkDataNotfound(req.body.student_id, req.body.teacher_id, req.body.term_id)
     if (!canOperated) {
         return res.status(status_code).send({
             message: set_message,

@@ -12,6 +12,7 @@ function getRoomName(user_id1, user_id2) {
 module.exports = (io) => {
     //on มีcallback
     io.on('connection', (socket) => {
+        //ค่าDefault ส่งเมื่อเริ่มแชท
         const userId = socket.handshake.auth.user_id;
         const chatPartnerId = socket.handshake.auth.chat_partner_id;
         /* ตัวอย่างตอนส่ง
@@ -26,11 +27,13 @@ module.exports = (io) => {
             socket.disconnect();
             return;
         }
+        
         //เข้า chat room
         const roomName = getRoomName(userId, chatPartnerId);
         socket.join(roomName);
-        socket.emit('welcome', `คุณเข้าร่วมห้องแชทกับผู้ใช้ ${chatPartnerId}`);
-        console.log(`User ${userId} joined room ${roomName}`);
+        
+        // socket.emit('welcome', `คุณเข้าร่วมห้องแชทกับผู้ใช้ ${chatPartnerId}`);
+        // console.log(`User ${userId} joined room ${roomName}`);
 
         socket.on('chat_message', async (msg) => {
             // บันทึกข้อความลงฐานข้อมูล

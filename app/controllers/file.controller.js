@@ -32,7 +32,7 @@ exports.upload = async (req, res) => {
             const fs = require('fs');
             const oldPath = existingImage.data;   // path ของไฟล์เก่า เช่น 'resources/uploads/image.png'
             fs.unlinkSync(oldPath);              // ลบไฟล์เก่าออกจากโฟลเดอร์
-        
+
             await existingImage.destroy();      // ลบข้อมูลรูปภาพเก่าใน database
         }
 
@@ -103,20 +103,31 @@ exports.findImage = async (req, res) => {
 };
 
 exports.findMultiImage = async (req, res) => {
-    const userIds = req.body
+    const raw_data = req.body
+    const userIds = raw_data.map((data) => data.user_id);
 
     try {
-        const image = await Image.findAll({
+          const image = await Image.findAll({
             where: {
-                user_id: {
-                    [Op.in]: userIds
-                }
+                user_id: userIds.length < 2
+                    ? userIds[0] // ถ้ามีแค่ 1 คน ใช้ค่าเดียว
+                    : { [Op.in]: userIds } // ถ้ามีหลายคน ใช้ Op.in
             },
             attributes: ["user_id", "name", "url"],
             order: [["user_id", "ASC"]],
-
         })
-        if (!image || image.length === 0) {
+
+        // const image = await Image.findAll({
+        //     where: {
+        //         user_id: {
+        //             [Op.in]: userIds
+        //         }
+        //     },
+        //     attributes: ["user_id", "name", "url"],
+        //     order: [["user_id", "ASC"]],
+
+        // })
+        if (!image || image?.length === 0) {
             res.status(200).send({
                 message: "Empty.",
                 data: null,

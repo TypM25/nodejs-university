@@ -2,6 +2,8 @@
 const { verifySignUp } = require("../middleware");
 const controller = require("../controllers/auth.controller");
 const user = require("../controllers/user.controller.js");
+const role = require("../controllers/role.controller.js");
+
 
 module.exports = function (app) {
   app.use(function (req, res, next) {
@@ -28,6 +30,8 @@ module.exports = function (app) {
   app.post("/api/auth/refreshtoken", controller.refreshToken);
 
   app.get("/api/all/users", user.findAllUser)
+
+   app.get("/api/all/roles", role.AllRole)
 
   app.delete("/api/deleteAll/users", user.deleteAllUser)
 

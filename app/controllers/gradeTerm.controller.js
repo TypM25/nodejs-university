@@ -31,7 +31,7 @@ exports.findAllGradeTerm = async (req, res) => {
 
 // exports.updateGradeTerm = async (req, res) => {
 //     try {
-//         const { canOperated, status_code, set_message } = await gradeDetailUtil.checkDataNotfound(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
+//         const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
 //         // console.log("status_code ===> ",status_code)
 //         if (!canOperated) {
 //             return res.status(status_code).send({
@@ -40,7 +40,7 @@ exports.findAllGradeTerm = async (req, res) => {
 //                 status_code: status_code
 //             });
 //         }
-//         const check_student_subject = await studentUtil.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
+//         const check_student_subject = await studentService.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
 //         console.log("check_student_subject ===> ", check_student_subject)
 //         if (check_student_subject.status_code !== 200) {
 //             return res.status(check_student_subject.status_code).send({

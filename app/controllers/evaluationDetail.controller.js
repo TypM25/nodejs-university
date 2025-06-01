@@ -4,14 +4,14 @@ const { where, cast, col } = require('sequelize');
 var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
 
-const evaluationDetailUtil = require('../utils/evaluationDetail.util.js');
-const studentUtil = require('../utils/student.util.js');
+const evaluationDetailService = require('../services/evaluationDetail.service.js');
+const studentService = require('../services/student.service.js');
 
 const EvaluationDetail = db.evaluationDetail
 
 //########################## CREATE ##########################
 exports.createEvaluationDetail = async (req, res) => {
-    const { canOperated, status_code, set_message } = await evaluationDetailUtil.checkDataNotfound(req.body.student_id, req.body.teacher_id, req.body.term_id, req.body.question_id)
+    const { canOperated, status_code, set_message } = await evaluationDetailService.checkDataNotfound(req.body.student_id, req.body.teacher_id, req.body.term_id, req.body.question_id)
     if (!canOperated) {
         return res.status(status_code).send({
             message: set_message,
@@ -19,7 +19,7 @@ exports.createEvaluationDetail = async (req, res) => {
             status_code: status_code
         });
     }
-    const check_student_teacher = await studentUtil.checkStudentTeacher(req.body.student_id, req.body.teacher_id)
+    const check_student_teacher = await studentService.checkStudentTeacher(req.body.student_id, req.body.teacher_id)
     if (check_student_teacher.canOperated === false) {
         return res.status(check_student_teacher.status_code).send({
             message: check_student_teacher.set_message,
@@ -88,7 +88,7 @@ exports.createMultiEvaluationDetail = async (req, res) => {
     }
     for (let item of inputData) {
         //เช็คข้อมูลที่ไม่มีในdb
-        const { canOperated, status_code, set_message } = await evaluationDetailUtil.checkDataNotfound(item.student_id, item.teacher_id, item.term_id, item.question_id)
+        const { canOperated, status_code, set_message } = await evaluationDetailService.checkDataNotfound(item.student_id, item.teacher_id, item.term_id, item.question_id)
         if (!canOperated) {
             return res.status(status_code).send({
                 message: set_message,
@@ -98,7 +98,7 @@ exports.createMultiEvaluationDetail = async (req, res) => {
             });
         }
         //เช็คว่านิสิตได้เรียนกับครูคนนี้มั้ย
-        const check_student_teacher = await studentUtil.checkStudentTeacher(item.student_id, item.teacher_id)
+        const check_student_teacher = await studentService.checkStudentTeacher(item.student_id, item.teacher_id)
         if (check_student_teacher.canOperated === false) {
             return res.status(check_student_teacher.status_code).send({
                 message: check_student_teacher.set_message,
@@ -230,7 +230,7 @@ exports.checkAlreadyAnswer = async (req, res) => {
         term_id: term_id
     };
 
-    // const check_student_teacher = await studentUtil.checkStudentTeacher(req.body.student_id, req.body.teacher_id)
+    // const check_student_teacher = await studentService.checkStudentTeacher(req.body.student_id, req.body.teacher_id)
     // if (check_student_teacher.canOperated === false) {
     //     return res.status(check_student_teacher.status_code).send({
     //         message: check_student_teacher.set_message,

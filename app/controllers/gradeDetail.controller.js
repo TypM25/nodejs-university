@@ -5,7 +5,7 @@ const Op = db.Sequelize.Op;
 
 const gradeDetailService = require('../services/gradeDetail.service.js');
 const gradeDetailUtil = require('../utils/gradeDetail.util.js');
-const studentUtil = require('../utils/student.util.js');
+const studentService = require('../services/student.service.js');
 
 const Subject = db.subject
 const GradeDetail = db.gradeDetail
@@ -13,7 +13,7 @@ const GradeDetail = db.gradeDetail
 exports.createGradeDetail = async (req, res) => {
     try {
         //เช็คว่าข้อมูลมีมั้ย
-        const { canOperated, status_code, set_message } = await gradeDetailUtil.checkDataNotfound(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
+        const { canOperated, status_code, set_message } = await gradeDetailService.checkDataNotfound(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
         // console.log("status_code ===> ",status_code)
         if (!canOperated) {
             return res.status(status_code).send({
@@ -22,7 +22,7 @@ exports.createGradeDetail = async (req, res) => {
                 status_code: status_code
             });
         }
-        const check_student_subject = await studentUtil.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
+        const check_student_subject = await studentService.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
         if (check_student_subject.status_code !== 200) {
             return res.status(check_student_subject.status_code).send({
                 message: check_student_subject.set_message,
@@ -34,7 +34,7 @@ exports.createGradeDetail = async (req, res) => {
         //คำนวณเกรด
         const credits_sub = await Subject.findByPk(req.body.subject_id)
         console.log("credits_sub ==>", credits_sub)
-        const cal_gradeDetail = await gradeDetailService.calculateGradeDetail(req.body.score)
+        const cal_gradeDetail = await gradeDetailUtil.calculateGradeDetail(req.body.score)
         const inputData = {
             student_id: req.body.student_id,
             subject_id: req.body.subject_id,
@@ -114,7 +114,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
             });
         }
         //เช็คinputตัวไหน notfound
-        const { canOperated, status_code, set_message } = await gradeDetailUtil.checkDataNotfound(item.student_id, item.subject_id, item.term_id, item.score)
+        const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(item.student_id, item.subject_id, item.term_id, item.score)
         if (!canOperated) {
             return res.status(status_code).send({
                 message: set_message,
@@ -123,7 +123,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
             });
         }
         //เช็คนิสิตคนนี้ได้ลงทะเบียนวิชานี้มั้ย
-        const check_student_subject = await studentUtil.checkIsStudentAddThisSubject(item.student_id, item.subject_id)
+        const check_student_subject = await studentService.checkIsStudentAddThisSubject(item.student_id, item.subject_id)
         if (check_student_subject.status_code !== 200) {
             return res.status(check_student_subject.status_code).send({
                 message: check_student_subject.set_message,
@@ -134,7 +134,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
         //หน่วยกิตวิชา
         const credits_sub = await Subject.findByPk(item.subject_id)
         //เเปลงคะแนนเป็นเกรด
-        const cal_gradeDetail = await gradeDetailService.calculateGradeDetail(item.score)
+        const cal_gradeDetail = await gradeDetailUtil.calculateGradeDetail(item.score)
 
         //checkข้อมูลซ้ำ
         const check_exist = await GradeDetail.findOne({
@@ -216,7 +216,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
 //     }));
 
 //     for (let item of req_data) {
-//         const { canOperated, status_code, set_message } = await gradeDetailUtil.checkDataNotfound(item.student_id, item.subject_id, item.term_id, item.score);
+//         const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(item.student_id, item.subject_id, item.term_id, item.score);
 //         if (!canOperated) {
 //             return res.status(status_code).send({
 //                 message: set_message,
@@ -225,7 +225,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
 //             });
 //         }
 
-//         const check_student_subject = await studentUtil.checkIsStudentAddThisSubject(item.student_id, item.subject_id);
+//         const check_student_subject = await studentService.checkIsStudentAddThisSubject(item.student_id, item.subject_id);
 //         if (check_student_subject.status_code !== 200) {
 //             return res.status(check_student_subject.status_code).send({
 //                 message: check_student_subject.set_message,
@@ -234,7 +234,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
 //             });
 //         }
 
-//         const cal_gradeDetail = await gradeDetailService.calculateGradeDetail(item.score);
+//         const cal_gradeDetail = await gradeDetailUtil.calculateGradeDetail(item.score);
 
 //         const inputData = {
 //             student_id: item.student_id,
@@ -299,7 +299,7 @@ exports.findAllGradeDetail = async (req, res) => {
 
 exports.updateGradeDetail = async (req, res) => {
     try {
-        const { canOperated, status_code, set_message } = await gradeDetailUtil.checkDataNotfound(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
+        const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
         // console.log("status_code ===> ",status_code)
         if (!canOperated) {
             return res.status(status_code).send({
@@ -308,7 +308,7 @@ exports.updateGradeDetail = async (req, res) => {
                 status_code: status_code
             });
         }
-        const check_student_subject = await studentUtil.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
+        const check_student_subject = await studentService.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
         console.log("check_student_subject ===> ", check_student_subject)
         if (check_student_subject.status_code !== 200) {
             return res.status(check_student_subject.status_code).send({
@@ -318,7 +318,7 @@ exports.updateGradeDetail = async (req, res) => {
             });
         }
 
-        const cal_gradeDetail = await gradeDetailService.calculateGradeDetail(req.body.score)
+        const cal_gradeDetail = await gradeDetailUtil.calculateGradeDetail(req.body.score)
         const inputData = {
             student_id: req.body.student_id,
             subject_id: req.body.subject_id,

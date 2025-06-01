@@ -1,8 +1,11 @@
+require('dotenv').config();
 const express = require("express"); //ตัวช่วยสร้างเว็บเซิร์ฟเวอร์
 const bodyParser = require("body-parser"); //แปลงข้อมูลที่ส่งเข้ามาให้เป็น JavaScript object
 const cors = require("cors"); // ช่วยให้เปิดเว็บไซต์จากโดเมนอื่น 
 const path = require("path"); //จัดการกับ path ของไฟล์
 const app = express(); //สร้างเซิร์ฟเวอร์ Express
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
 
 //-------------------------------------------------SOCKET.IO-----------------------------------------------------
 const { Server } = require("socket.io");
@@ -20,8 +23,6 @@ const io = new Server(server, {
 
 socketHandler(io); // ส่ง io ไปให้จัดการต่อ
 //--------------------------------------------------------------------------------------------------------------
-
-
 var corsOptions = {
   //อนุญาตให้ทุกโดเมนเข้าถึง API นี้ได้
   origin: "*"
@@ -70,10 +71,10 @@ require('./cron/semesterUpdate')(app);
 
 
 //เริ่มรันเซิร์ฟเวอร์
-const PORT = process.env.PORT || 8000;
+const port = process.env.PORT;
 //เริ่มเปิดให้คนเข้ามาใช้งานได้
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}.`);
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}.`);
 });
 
 //ฟังก์ชันสร้าง Role

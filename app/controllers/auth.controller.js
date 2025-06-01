@@ -3,6 +3,7 @@ const Op = db.Sequelize.Op;
 const config = require("../config/auth.config");
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
+const { where } = require("sequelize");
 
 const User = db.user;
 const Role = db.role;
@@ -16,6 +17,7 @@ exports.signup = async (req, res) => {
         confirmPassword: req.body.confirmPassword,
         role_name: req.body.role_name,
     }
+    //เช็คไม่ได้ค่าที่ไม่กรอก
     for (const [key, value] of Object.entries(raw_user)) {
         if (!value) {
             return res.status(400).send({
@@ -40,27 +42,48 @@ exports.signup = async (req, res) => {
 
     try {
         const user = await User.create(new_user)
-        if (req.body.role_name) {
-            const [role, created] = await Role.findOrCreate({
-                where: { name: req.body.role_name }
-            });
+        const role = await Role.findOne({ where: { name: new_user.role_name } })
 
-            console.log("SignUp Roles : " + JSON.stringify(role));
-            //เชื่อมความสัมพันธ์ระหว่าง User กับ Role
-            await user.setRoles([role])
-            return res.status(200).send({
-                message: "User was registered successfully!",
-                data: user,
-                status_code: 200
+        if (!role) {
+            return res.status(404).send({
+                message: "Role not found.",
+                data: null,
+                status_code: 404
             });
         }
-        //กรณีไม่ได้ใส่role แต่ปกติดักให้เลือกroleอยู่เเล้ว
-        await user.setRoles([1]);
-        return res.status(200).send({
-            message: "User was registered successfully!",
+        //ใส่[] เพราะ setRolesเป็น arrayเสมอ เพราะเชื่อมแบบmany to many 
+        user.setRoles([role]) //มันจะไปเชื่อมกันเองใน  thrugh: "user_roles"
+        user.save()
+
+        res.status(200).send({
+            message: "Created successfully!",
             data: user,
             status_code: 200
         });
+
+        // const user = await User.create(new_user)
+        // if (req.body.role_name) {
+        //     const [role, created] = await Role.findOrCreate({
+        //         where: { name: req.body.role_name }
+        //     });
+
+        //     // console.log("SignUp Roles : " + JSON.stringify(role));
+
+        //     //เชื่อมความสัมพันธ์ระหว่าง User กับ Role
+        //     await user.setRoles([role])
+        //     return res.status(200).send({
+        //         message: "User was registered successfully!",
+        //         data: user,
+        //         status_code: 200
+        //     });
+        // }
+        // //กรณีไม่ได้ใส่role แต่ปกติดักให้เลือกroleอยู่เเล้ว
+        // await user.setRoles([1]);
+        // return res.status(200).send({
+        //     message: "User was registered successfully!",
+        //     data: user,
+        //     status_code: 200
+        // });
     }
     catch (err) {
         res.status(500).send({
@@ -73,12 +96,13 @@ exports.signup = async (req, res) => {
 
 //ล็อคอิน
 exports.signin = async (req, res) => {
+    const data_login = {
+        username: req.body.username,
+        password: req.body.password
+    }
     try {
         const user = await User.findOne({
-            where:
-            {
-                username: req.body.username
-            },
+            where: { username: data_login.username },
             include: [{
                 model: Role,
                 as: "roles",
@@ -88,7 +112,6 @@ exports.signin = async (req, res) => {
                 }
             }]
         })
-
 
         //ถ้าหาusernameไม่เจอ
         if (!user) {
@@ -100,7 +123,7 @@ exports.signin = async (req, res) => {
         }
         //ตรวจสอบว่า รหัสผ่านที่ผู้ใช้กรอกตรงกับรหัสผ่านที่เก็บในฐานข้อมูล
         var passwordIsValid = bcrypt.compareSync(
-            req.body.password,
+            data_login.password,
             user.password
         );
         //false ถ้า password ไม่ถูกต้อง

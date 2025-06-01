@@ -27,7 +27,7 @@ exports.checkStudentTeacher = async (student_id, teacher_id) => {
             ]
         }
     )
-    //ถ้าไม่มีวิชา
+    //ถ้านิสิตไม่มีวิชาที่ลทบ.
     if (result.subjects.length === 0) {
         return {
             canOperated: false,
@@ -38,6 +38,7 @@ exports.checkStudentTeacher = async (student_id, teacher_id) => {
     //หาidของอาจารย์ทั้งหมด
     const get_teacher_id = result.subjects.flatMap(sub => sub.teachers.map(teacher => teacher.teacher_id))
 
+    //เช็คว่าidอาจารที่inputมามีกับที่นิสิตเรียนมั้ย
     const check_teacher_id = get_teacher_id.includes(teacher_id)
     if (!check_teacher_id) {
         return {
@@ -53,7 +54,7 @@ exports.checkStudentTeacher = async (student_id, teacher_id) => {
     };
 }
 
-
+//เช็คว่านิสิตคนนี้ลทบ.วิชานี้มั้ย
 exports.checkIsStudentAddThisSubject = async (student_id, subject_id) => {
     const student = await Student.findOne(
         {
@@ -62,6 +63,7 @@ exports.checkIsStudentAddThisSubject = async (student_id, subject_id) => {
                 model: Subject,
                 as: "subjects",
                 attributes: ["subject_id", "subject_name", "credits"],
+                where: { subject_id },
                 through: {
                     attributes: [],
                 }
@@ -69,33 +71,44 @@ exports.checkIsStudentAddThisSubject = async (student_id, subject_id) => {
         },
     )
 
+    //ไม่เจอนิสิต
     if (!student) {
         return {
             status_code: 404,
             set_message: "Student not found"
         }
     }
-
-    const subject = student.subjects.flatMap(s => s.subject_id)
-    console.log(subject)
-
-    //ถ้าไม่เจอวิชา
-    if (subject.length === 0) {
+    //ยังไม่ลงวิชาอะไรเลย
+    if (student.subjects.length === 0) {
         return {
             status_code: 404,
             set_message: "This student not enroll any subjects."
         }
     }
-    if (subject.includes(subject_id)) {
-        return {
-            status_code: 200,
-            set_message: "This student already enroll subject.",
-        }
+    //ลทบ.วิชานี้เเล้ว
+    return {
+        status_code: 200,
+      set_message: "This student already enrolled this subject."
     }
-    else {
-        return {
-            status_code: 404,
-            set_message: "This student not enroll this subject.",
-        }
-    }
+
+
+
+    //ถ้าเขียนเเบบไม่ใช้where
+    // const subject = student.subjects.flatMap(s => s.subject_id)
+    // console.log(subject)
+
+    // //ถ้าไม่เจอวิชา
+    // if (subject.length === 0) {
+    //     return {
+    //         status_code: 404,
+    //         set_message: "This student not enroll any subjects."
+    //     }
+    // }
+    // if (subject.includes(subject_id)) {
+    //     return {
+    //         status_code: 200,
+    //         set_message: "This student already enroll subject.",
+    //     }
+    // }
+    // }
 }

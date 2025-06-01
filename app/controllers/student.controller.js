@@ -306,19 +306,23 @@ exports.searchStudent = async (req, res) => {
         searchData: req.body.searchData,
         sort: req.body.sort
     }
-
+    //Set Menu Filter
     const cols_name = ['student_id', 'create_by', 'user_id', 'createdAt', 'student_first_name', 'student_last_name']
 
     let searchCondition = {}
 
+    //เช็คค่าการส่ง
     if (data.searchData && data.searchType && cols_name.includes(data.searchType)) {
+        //เรียกฟังก์ชันเสิช
         searchCondition = searchUtil.setSearchCondition(data.searchType, data.searchData)
     }
 
     try {
+        //ถ้าไม่มีการinput searchData fetchนิสิตทั้งหมด
         if (!data.searchData) {
             const student = await Student.findAll({ order: [['student_id', `${data.sort}`]] });
 
+            //แปลงวันที่ วัน-เดือน-ปี
             const formattedResult = student.map(data => {
                 data = data.get();
                 data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
@@ -331,11 +335,12 @@ exports.searchStudent = async (req, res) => {
             });
             return
         }
-
+        //ถ้ามี ให้เสิชตาม searchCondition
         const student = await Student.findAll({
             where: searchCondition,
             order: [['student_id', `${data.sort}`]]
         });
+        //ถ้าไม่มีข้อมูลนิสิต
         if (!student) {
             return res.status(404).send({
                 message: "No data.",
@@ -343,6 +348,7 @@ exports.searchStudent = async (req, res) => {
                 status_code: 404
             })
         }
+        //ถ้ามีข้อมูลนิสิตให้ แปลงวัน วัน-เดือน-ปี
         const formattedResult = student.map(data => {
             data = data.get();
             data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');

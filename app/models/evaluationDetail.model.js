@@ -47,11 +47,11 @@ module.exports = (sequelize, Sequelize) => {
     EvaluationDetail.afterCreate(async (evaluationDetail, options) => {
         const db = require('../models');
         const evaluationService = require('../services/evaluation.service.js');
-        const evaluationUtil = require('../utils/evaluation.util.js');
+       
         const Evaluation = db.evaluation
 
         try {
-            const { canOperated, set_message } = await evaluationUtil.checkDataNotfound(evaluationDetail.student_id, evaluationDetail.teacher_id, evaluationDetail.term_id);
+            const { canOperated, set_message } = await evaluationService.checkDataNotfound(evaluationDetail.student_id, evaluationDetail.teacher_id, evaluationDetail.term_id);
             if (!canOperated) {
                 console.log(set_message);
                 return;

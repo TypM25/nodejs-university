@@ -215,17 +215,30 @@ exports.searchUser = async (req, res) => {
 
 //########################## UPDATE ##########################
 exports.changePassword = async (req, res) => {
-    const data = {
+    const raw_data = {
         username: req.body.username,
-        password: bcrypt.hashSync(req.body.password, 10)
+        password: req.body.password,
+        confirmPassword: req.body.confirmPassword
+    }
+
+    //เมื่อไม่ได้กรอกข้อมูล
+    for (const [key, value] of Object.entries(raw_data)) {
+        if (!value) {
+            return res.status(404).send({
+                message: `Please enter your ${key}.`,
+                data: null,
+                status_code: 404
+            });
+        }
     }
 
     try {
+        //เช็ค username มีจริงมั้ย
         const user = await User.findOne({
-            where: { username: data.username }
+            where: { username: raw_data.username }
         })
 
-
+        //ถ้าไม่เจอข้อมูล
         if (!user) {
             return res.status(400).send({
                 message: "Username is not found.",
@@ -233,12 +246,26 @@ exports.changePassword = async (req, res) => {
                 status_code: 400
             })
         }
-        
-        user.password = data.password
+
+        //หากรหัสผ่านไม่ตรง
+        if (raw_data.password !== raw_data.confirmPassword) {
+            return res.status(400).send({
+                message: "Password and ConfirmPassword is not matching.",
+                data: null,
+                status_code: 400
+            })
+        }
+
+        const new_data = {
+            username: raw_data.username,
+            password: bcrypt.hashSync(raw_data.password, 10)
+        }
+
+        user.password = new_data.password
         user.save()
         // await User.update(
-        //     { password: data.password },
-        //     { where: { username: data.username } }
+        //     { password: new_data.password },
+        //     { where: { username: new_data.username } }
         // )
         res.status(200).send({
             message: "Changed password successfully!",
@@ -280,19 +307,19 @@ exports.deleteAllUser = async (req, res) => {
     }
 };
 
-exports.deleteByUsername = async (req, res) => {
-    const data = { username: req.body.username }
+exports.deleteUser = async (req, res) => {
+    const id = req.body.user_id
     try {
-        const user = await User.findOne({ where: { username: data.username } })
+        const user = await User.findOne({ where: { user_id: id } })
         if (!user) {
             return res.status(404).send({
-                message: "This username is not found.",
+                message: "This user_id is not found.",
                 data: null,
                 status_code: 404
             });
         }
 
-        await User.destroy({ where: { username: data.username } })
+        await User.destroy({ where: { user_id: id } })
         res.status(200).send({
             message: "Users were deleted successfully!",
             data: user,

@@ -6,6 +6,7 @@ const Teacher = db.teacher
 const Semester = db.semester
 const Question = db.question
 
+//เช็คว่าinputDataตัวไหนไม่มีในDB
 exports.checkDataNotfound = async (student_id, teacher_id, term_id, question_id) => {
     let canOperated = false
     let status_code;
@@ -19,6 +20,7 @@ exports.checkDataNotfound = async (student_id, teacher_id, term_id, question_id)
         }
     }
 
+     // ตรวจสอบตัวเลข
     else if (!Number.isInteger(Number(student_id)) || !Number.isInteger(Number(teacher_id)) 
         || !Number.isInteger(Number(term_id)) || !Number.isInteger(Number(question_id)) ) {
         let data = "";

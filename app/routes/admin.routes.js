@@ -31,7 +31,7 @@ module.exports = function (app) {
         user.changePassword);
 
     app.delete("/admin/delete/user", [authJwt.verifyToken, authJwt.isAdmin],
-        user.deleteByUsername);
+        user.deleteUser);
 
     app.delete("/admin/deleteAll/user", [authJwt.verifyToken, authJwt.isAdmin],
         user.deleteAllUser);
@@ -42,8 +42,6 @@ module.exports = function (app) {
     app.post("/admin/create/role", [authJwt.verifyToken, authJwt.isAdmin],
         role.createRole);
 
-    app.get("/admin/all/role", [authJwt.verifyToken, authJwt.isAdmin],
-        role.AllRole);
     //................Admin-Student...................
     app.post("/admin/create/student", [authJwt.verifyToken, authJwt.isAdmin],
         student.createStudent);
@@ -225,6 +223,9 @@ module.exports = function (app) {
 
     app.post("/admin/create/teacherRating", [authJwt.verifyToken, authJwt.isAdmin],
         teacherRating.createTeacherRating);
+
+    app.post("/admin/search/teacherRating", [authJwt.verifyToken, authJwt.isAdmin],
+        teacherRating.searchTeacherRatig);
 
     app.put("/admin/delete/all/teacherRating", [authJwt.verifyToken, authJwt.isAdmin],
         teacherRating.deleteAllTeacherRating);

@@ -1,5 +1,5 @@
 {
-  "name": "nodejs-sequelize-many-to-many",
+  "name": "nodejs-university",
   "version": "1.0.0",
   "description": "Node.js Sequelize Many to Many Association example",
   "main": "server.js",

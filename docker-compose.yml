@@ -1,0 +1,40 @@
+# จัดการและรันหลายๆ Docker container พร้อมกันในครั้งเดียว
+services:
+  postgresdb:
+    image: postgres # Docker image ทางการของ PostgreSQL
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      # ใช้ชื่อที่ตรงกับ .env ของคุณ
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "${POSTGRESDB_LOCAL_PORT}:${POSTGRESDB_DOCKER_PORT}"
+    volumes:
+      - db:/var/lib/postgresql/data # แก้ path นี้ให้ถูกต้อง
+
+  app:
+    depends_on:
+      - postgresdb
+    build: .
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+    # port นอก : port ใน
+      - "${NODE_LOCAL_PORT}:${NODE_DOCKER_PORT}"
+    environment:
+      - DB_HOST=postgresdb
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${POSTGRESDB_DOCKER_PORT}
+      - DB_DIALECT=${DB_DIALECT}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
+    stdin_open: true
+    tty: true
+
+volumes:
+  db:

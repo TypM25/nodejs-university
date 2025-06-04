@@ -5,11 +5,6 @@ const cors = require("cors"); // ช่วยให้เปิดเว็บ�
 const path = require("path"); //จัดการกับ path ของไฟล์
 const app = express(); //สร้างเซิร์ฟเวอร์ Express
 
-
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('JWT_SECRET:', process.env.JWT_SECRET)
-
-
 const authConfig = require('./app/config/auth.config');
 
 console.log("authConfig.secret =", authConfig.secret);
@@ -17,7 +12,7 @@ console.log("authConfig.secret =", authConfig.secret);
 
 //-------------------------------------------------SOCKET.IO-----------------------------------------------------
 const { Server } = require("socket.io");
-const { createServer } = require('node:http'); 
+const { createServer } = require('node:http');
 const server = createServer(app); //สร้าง HTTP server จาก Express
 const socketHandler = require('./socket'); // โหลดฟังก์ชัน socket จากไฟล์อื่น
 //สร้าง socket server 
@@ -56,13 +51,19 @@ const Role = db.role;
 
 //true ลบdatabaseทุกครั้งที่run app 
 db.sequelize.sync({ force: false })
-  .then(() => {
+  .then(async () => {
     console.log("Database synchronized without dropping tables!");
-    initial();
+
+    // ตรวจว่ามี Role แล้วหรือยัง
+    const count = await Role.count();
+    if (count === 0) {
+      await initial();
+    }
   })
   .catch((error) => {
     console.error("Error syncing database:", error);
   });
+
 
 // กำหนด route พื้นฐาน
 app.get("/", (req, res) => {
@@ -79,21 +80,18 @@ require('./cron/semesterUpdate')(app);
 
 
 //เริ่มรันเซิร์ฟเวอร์
-const port = process.env.PORT;
+const port = process.env.NODE_LOCAL_PORT;
 //เริ่มเปิดให้คนเข้ามาใช้งานได้
 server.listen(port, () => {
   console.log(`Server is running on port ${port}.`);
 });
 
-//ฟังก์ชันสร้าง Role
-function initial() {
-  Role.create({
-    name: "student"
-  }),
-    Role.create({
-      name: "admin"
-    }),
-    Role.create({
-      name: "teacher"
-    })
+
+async function initial() {
+  const roles = ["student", "admin", "teacher"];
+  for (const name of roles) {
+    await Role.findOrCreate({
+      where: { name },
+    });
+  }
 }

@@ -4,8 +4,16 @@ const bodyParser = require("body-parser"); //แปลงข้อมูลท�
 const cors = require("cors"); // ช่วยให้เปิดเว็บไซต์จากโดเมนอื่น 
 const path = require("path"); //จัดการกับ path ของไฟล์
 const app = express(); //สร้างเซิร์ฟเวอร์ Express
+
+
 console.log('DB_HOST:', process.env.DB_HOST);
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('JWT_SECRET:', process.env.JWT_SECRET)
+
+
+const authConfig = require('./app/config/auth.config');
+
+console.log("authConfig.secret =", authConfig.secret);
+
 
 //-------------------------------------------------SOCKET.IO-----------------------------------------------------
 const { Server } = require("socket.io");
@@ -68,9 +76,6 @@ require('./app/routes/teacher.routes')(app);
 require('./app/routes/auth.routes')(app);
 require('./app/routes/user.routes')(app);
 require('./cron/semesterUpdate')(app);
-
-
-
 
 
 //เริ่มรันเซิร์ฟเวอร์

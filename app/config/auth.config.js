@@ -3,8 +3,8 @@ require("dotenv").config();  // เพิ่มบรรทัดนี้ไว
 
 module.exports = {
   secret: process.env.JWT_SECRET,
-  jwtExpiration: process.env.JWT_EXPIRATION,
-  jwtRefreshExpiration: process.env.JWT_REFRESH_EXPIRATION,
+  jwtExpiration: Number(process.env.JWT_EXPIRATION) ,
+  jwtRefreshExpiration: Number(process.env.JWT_REFRESH_EXPIRATION) 
 };
 
 

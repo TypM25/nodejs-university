@@ -30,7 +30,7 @@ module.exports = function (app) {
     app.post("/teacher/check/subject/:teacher_id/:subject_id", [authJwt.verifyToken, authJwt.isTeacher],
         teacher.checkIsTeacherAddThisSubject);
 
-    app.post("/teacher/add/subject/:teacher_id/:subject_id", [authJwt.verifyToken, authJwt.isTeacher],
+    app.post("/teacher/add/subject", [authJwt.verifyToken, authJwt.isTeacher],
         teacher.addTeachSubject);
 
     app.delete("/teacher/remove/subject/:teacher_id/:subject_id", [authJwt.verifyToken, authJwt.isTeacher],

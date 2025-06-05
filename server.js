@@ -7,8 +7,6 @@ const app = express(); //สร้างเซิร์ฟเวอร์ Expres
 
 const authConfig = require('./app/config/auth.config');
 
-console.log("authConfig.secret =", authConfig.secret);
-
 
 //-------------------------------------------------SOCKET.IO-----------------------------------------------------
 const { Server } = require("socket.io");
@@ -85,7 +83,6 @@ const port = process.env.NODE_LOCAL_PORT;
 server.listen(port, () => {
   console.log(`Server is running on port ${port}.`);
 });
-
 
 async function initial() {
   const roles = ["student", "admin", "teacher"];

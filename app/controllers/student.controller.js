@@ -20,14 +20,15 @@ const GradeTerm = db.gradeTerm
 
 //########################## CREATE ##########################
 exports.createStudent = async (req, res) => {
-    if (!req.body.student_first_name && !req.body.student_last_name) {
-        res.status(400).send({
-            message: "Content can not be empty!",
+    if (!req.body.student_first_name?.trim() || !req.body.student_last_name?.trim()) {
+        return res.status(400).send({
+            message: "First name and last name cannot be empty!",
             data: null,
             status_code: 400
         });
-        return;
     }
+
+
     try {
         const term = await semesterService.checkSemester()
         if (!term || !term.activeTerm) {
@@ -53,13 +54,7 @@ exports.createStudent = async (req, res) => {
                 status_code: 400
             });
         }
-        if (!student.student_first_name || !student.student_last_name) {
-            return res.status(400).send({
-                message: "กรุณากรอกข้อมูลให้ครบ",
-                data: result,
-                status_code: 400
-            });
-        }
+
         const user = await User.findOne({
             where: { user_id: student.user_id },
             include: [{
@@ -92,15 +87,15 @@ exports.createStudent = async (req, res) => {
             }
         })
         if (oldStudent) {
-            res.status(400).send({
+            return res.status(400).send({
                 message: "นักเรียนซ้ำ",
                 data: null,
                 status_code: 400
             });
         }
         else {
-            const result = await Student.create(student)
-            console.log("student_id :", result.student_id)
+            let result = null;
+            result = await Student.create(student)
             user.student_id = result.student_id
             await user.save();
             res.status(200).send({
@@ -111,14 +106,15 @@ exports.createStudent = async (req, res) => {
 
             //create updateStudent Table
             update_data = {
-                update_by: result.username,
+                update_by: result?.username,
                 update_type: 'CREATE',
-                student_id: result.student_id,
+                student_id: result?.student_id,
                 new_data: student.student_first_name + " " + student.student_last_name,
                 old_data: null
             }
 
             try {
+
                 await UpdateStudent.create(update_data);
                 console.log("Update Data", update_data);
             } catch (err) {

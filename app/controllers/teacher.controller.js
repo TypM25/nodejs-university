@@ -21,6 +21,14 @@ exports.createTeacher = async (req, res) => {
         teacher_last_name: req.body.teacher_last_name,
         create_by: req.user_id,
     }
+    if (isNaN(data.user_id)) {
+        return res.status(400).send({
+            message: "User id is not a number!",
+            data: null,
+            status_code: 400
+        });
+
+    }
 
     if (!data.teacher_first_name || !data.teacher_last_name) {
         res.status(400).send({
@@ -130,12 +138,12 @@ exports.findTeacherByTeacherId = async (req, res) => {
     }
 
     try {
-        const term = await semesterService.checkSemester()
+        const { activeTerm } = await semesterService.checkSemester()
         const result = await Teacher.findByPk(id, {
             include: [{
                 model: RatingTeacher,
                 as: "teacherRating",
-                where: { term_id: term.activeTerm.term_id },
+                where: { term_id: activeTerm?.term_id },
                 attributes: ["term_id", "avg_score", "rating_score"],
             }]
         });
@@ -175,7 +183,7 @@ exports.findTeacherByUserId = async (req, res) => {
         })
     }
     try {
-        const term = await semesterService.checkSemester()
+        const { activeTerm } = await semesterService.checkSemester()
 
         const result = await Teacher.findOne({
             where: { user_id: user_id },
@@ -183,7 +191,7 @@ exports.findTeacherByUserId = async (req, res) => {
                 model: RatingTeacher,
                 as: "teacherRating",
                 required: false,
-                where: { term_id: term.activeTerm.term_id },
+                where: { term_id: activeTerm?.term_id },
                 attributes: ["term_id", "avg_score", "rating_score"],
             }]
         })
@@ -434,6 +442,7 @@ exports.removeSubjectByTeacher = async (req, res) => {
 exports.checkIsTeacherAddThisSubject = async (req, res) => {
     const teacher_id = req.params.teacher_id;
     const subject_id = req.params.subject_id;
+
     try {
         const teacher = await Teacher.findByPk(teacher_id, {
             include: [{
@@ -477,10 +486,10 @@ exports.checkIsTeacherAddThisSubject = async (req, res) => {
 
 //########################## ADD ##########################
 exports.addTeachSubject = async (req, res) => {
-    const teacher_id = req.params.teacher_id;
-    const subject_id = req.params.subject_id;
+    const teacher_id = req.body.teacher_id;
+    const subject_id = req.body.subject_id;
     try {
-        if (!teacher_id || !subject_id || teacher_id === 0 || subject_id === 0) {
+        if (!teacher_id || !subject_id) {
             return res.status(400).send({
                 message: "Content can not be empty!",
                 data: null,

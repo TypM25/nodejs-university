@@ -129,6 +129,11 @@ db.student.hasMany(db.termHistory, {
 })
 
 
+db.student.belongsTo(db.semester, {
+    foreignKey: 'term_id',  // FK ที่อยู่ใน student
+});
+
+
 //############################################### SUBJECT ###############################################
 db.subject.belongsToMany(db.student, {
     through: "subject_student",
@@ -183,6 +188,10 @@ db.teacher.hasOne(db.teacherRating, {
     onDelete: 'CASCADE'   // ลบข้อมูลใน TeacherRating เมื่อ Teacher ถูกลบ
 });
 
+db.teacher.belongsTo(db.semester, {
+    foreignKey: 'term_id',  
+});
+
 //############################################### GRADE ###############################################
 //.............grade detail.............
 db.gradeDetail.belongsTo(db.student, {
@@ -227,6 +236,10 @@ db.image.belongsTo(db.user, {
 
 //############################################### SEMESTER ###############################################
 db.semester.hasMany(db.student, {
+    foreignKey: 'term_id',  // FK ที่อยู่ใน teacher
+});
+
+db.semester.hasMany(db.teacher, {
     foreignKey: 'term_id',  // FK ที่อยู่ใน teacher
 });
 

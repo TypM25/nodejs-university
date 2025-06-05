@@ -89,7 +89,8 @@ exports.findAllUser = async (req, res) => {
 
 exports.findByUserId = async (req, res) => {
     const id = req.body.id
-    if (!id || isNaN(id)) {
+    console.log('Received id:', id);
+    if (!id || isNaN(Number(id))) {
         return res.status(400).send({
             message: "Enter user id.",
             data: null,

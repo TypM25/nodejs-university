@@ -3,31 +3,32 @@ services:
 
   # container ชื่อ
   postgresdb:
-    image: postgres # ชื่อImage
-    restart: unless-stopped #รีสตาร์ทอัตโนมัติ ถ้าไม่ถูกหยุดด้วยมือ
-    env_file: ./.env
+    image: postgres                             # ชื่อImage
+    restart: unless-stopped                     # รีสตาร์ทอัตโนมัติ ถ้าไม่ถูกหยุดด้วยมือ
+    env_file: ./.env                            # โหลดค่าต่าง ๆ จากไฟล์ .env
     environment:
-      # ใช้ชื่อที่ตรงกับ .env ของคุณ
+      #ส่งค่าจาก .env ให้ container 
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     ports:
+      # port เครื่องเรา : port container 
       - "${POSTGRESDB_LOCAL_PORT}:${POSTGRESDB_DOCKER_PORT}"
     volumes:
-      - db:/var/lib/postgresql/data # แก้ path นี้ให้ถูกต้อง
+      - db:/var/lib/postgresql/data             # ใช้volume ชื่อ db เพื่อ เก็บข้อมูลจริงของ DB ทำให้ข้อมูลไม่หายแม้เราจะลบ container ทิ้ง
 
   # container ชื่อ
   app:
     depends_on:
-      - postgresdb
-    build: .
-    restart: unless-stopped
-    env_file: ./.env
+      - postgresdb                              # บอกให้ Docker รัน postgresdb ก่อน แล้วค่อยรัน app
+    build: .                                    # สร้าง image ของแอปจาก Dockerfile ที่อยู่ใน path นี้
+    restart: unless-stopped                     # รีสตาร์ทอัตโนมัติ ถ้าไม่ถูกหยุดด้วยมือ               
+    env_file: ./.env                            # โหลดค่าต่าง ๆ จากไฟล์ .env
     ports:
-      # port นอก : port ใน
+       # port เครื่องเรา : port container 
       - "${NODE_LOCAL_PORT}:${NODE_DOCKER_PORT}"
     environment:
-      - DB_HOST=postgresdb
+      - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
@@ -36,8 +37,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
-    stdin_open: true
+    stdin_open: true                            # เปิดให้ terminal เชื่อมต่อกับ container ได้แบบ interactive
     tty: true
 
 volumes:
-  db:
+  db:                                           # ประกาศ volume ชื่อ db (จะใช้ด้านบนใน postgresdb)

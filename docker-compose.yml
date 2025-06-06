@@ -1,8 +1,10 @@
 # จัดการและรันหลายๆ Docker container พร้อมกันในครั้งเดียว
 services:
+
+  # container ชื่อ
   postgresdb:
-    image: postgres # Docker image ทางการของ PostgreSQL
-    restart: unless-stopped
+    image: postgres # ชื่อImage
+    restart: unless-stopped #รีสตาร์ทอัตโนมัติ ถ้าไม่ถูกหยุดด้วยมือ
     env_file: ./.env
     environment:
       # ใช้ชื่อที่ตรงกับ .env ของคุณ
@@ -14,6 +16,7 @@ services:
     volumes:
       - db:/var/lib/postgresql/data # แก้ path นี้ให้ถูกต้อง
 
+  # container ชื่อ
   app:
     depends_on:
       - postgresdb
@@ -21,7 +24,7 @@ services:
     restart: unless-stopped
     env_file: ./.env
     ports:
-    # port นอก : port ใน
+      # port นอก : port ใน
       - "${NODE_LOCAL_PORT}:${NODE_DOCKER_PORT}"
     environment:
       - DB_HOST=postgresdb

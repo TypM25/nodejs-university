@@ -2,6 +2,7 @@
 const { where } = require("sequelize");
 const db = require("../models/index.js");
 const Op = db.Sequelize.Op;
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const gradeDetailService = require('../services/gradeDetail.service.js');
 const gradeDetailUtil = require('../utils/gradeDetail.util.js');
@@ -15,21 +16,11 @@ exports.createGradeDetail = async (req, res) => {
         //เช็คว่าข้อมูลมีมั้ย
         const { canOperated, status_code, set_message } = await gradeDetailService.checkDataNotfound(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
         // console.log("status_code ===> ",status_code)
-        if (!canOperated) {
-            return res.status(status_code).send({
-                message: set_message,
-                data: null,
-                status_code: status_code
-            });
-        }
+        if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
+
         const check_student_subject = await studentService.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
-        if (check_student_subject.status_code !== 200) {
-            return res.status(check_student_subject.status_code).send({
-                message: check_student_subject.set_message,
-                data: null,
-                status_code: check_student_subject.status_code,
-            });
-        }
+        if (check_student_subject.status_code !== 200) return res.status(check_student_subject.status_code).send(new ErrorRes(check_student_subject.set_message, check_student_subject.status_code))
+
 
         //คำนวณเกรด
         const credits_sub = await Subject.findByPk(req.body.subject_id)
@@ -55,26 +46,14 @@ exports.createGradeDetail = async (req, res) => {
         });
 
         if (!created) {
-            res.status(409).send({
-                message: "Already created gradeDetail of this student and this subject.",
-                data: null,
-                status_code: 409
-            });
+            return res.status(409).send(new ErrorRes("Already created gradeDetail of this student and this subject.", 409))
         }
         else {
-            res.status(200).send({
-                message: "Created gradeDetail successfully.",
-                data: gradeDetail,
-                status_code: 200
-            });
+            return res.status(200).send(new SuccessRes("Created gradeDetail successfully.", gradeDetail))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -87,50 +66,25 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
         score: Number(data.score),
         credits: Number(data.credits),
     }));
-    if (inputData.length === 0) {
-        return res.status(400).send({
-            message: "Please edit some data.",
-            data: null,
-            status_code: 400
-        });
-    }
-
+    if (inputData.length === 0) return res.status(400).send(new ErrorRes("Please edit some data.", 400))
 
     const updateData = []
     const createData = []
     for (let item of inputData) {
         if (item.score < 0) {
-            return res.status(400).send({
-                message: "Score must more than 0.",
-                data: null,
-                status_code: 400
-            });
+            return res.status(400).send(new ErrorRes("Score must more than 0.", 400))
         }
         else if (item.score > 100) {
-            return res.status(400).send({
-                message: "Scores must less than 100.",
-                data: null,
-                status_code: 400
-            });
+            return res.status(400).send(new ErrorRes("Scores must less than 100.", 400))
         }
         //เช็คinputตัวไหน notfound
         const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(item.student_id, item.subject_id, item.term_id, item.score)
-        if (!canOperated) {
-            return res.status(status_code).send({
-                message: set_message,
-                data: null,
-                status_code: status_code
-            });
-        }
+        if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
         //เช็คนิสิตคนนี้ได้ลงทะเบียนวิชานี้มั้ย
         const check_student_subject = await studentService.checkIsStudentAddThisSubject(item.student_id, item.subject_id)
-        if (check_student_subject.status_code !== 200) {
-            return res.status(check_student_subject.status_code).send({
-                message: check_student_subject.set_message,
-                data: null,
-                status_code: check_student_subject.status_code,
-            });
-        }
+        if (check_student_subject.status_code !== 200)
+            return res.status(check_student_subject.status_code).send(new ErrorRes(check_student_subject.set_message, check_student_subject.status_code))
+
         //หน่วยกิตวิชา
         const credits_sub = await Subject.findByPk(item.subject_id)
         //เเปลงคะแนนเป็นเกรด
@@ -189,18 +143,11 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
                 individualHooks: true
             });
         }
-        res.status(200).send({
-            message: "Create and update gradeDetail successfully!",
-            data: null,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Create and update gradeDetail successful!"))
 
-    } catch (err) {
-        return res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+
+    } catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -255,9 +202,9 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
 //                 status_code: 200
 //             });
 //         }
-//         catch (err) {
+//         catch (error) {
 //             return res.status(500).send({
-//                 message: "Error : " + err.message,
+//                 message: "Error : " + error.message,
 //                 data: null,
 //                 status_code: 500
 //             });
@@ -275,25 +222,13 @@ exports.findAllGradeDetail = async (req, res) => {
             ]
         });
 
-        if (gradeDetails.length === 0) {
-            return res.status(200).send({
-                message: "GradeDetail data is empty.",
-                data: null,
-                status_code: 200
-            })
-        }
-        res.status(200).send({
-            message: "Fetching gradeDetail successfully.",
-            data: gradeDetails,
-            status_code: 200
-        });
+        if (gradeDetails.length === 0) return res.status(200).send(new SuccessRes("GradeDetail data is empty."))
+
+        res.status(200).send(new SuccessRes("Fetching gradeDetail successfully.", gradeDetails))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -301,22 +236,11 @@ exports.updateGradeDetail = async (req, res) => {
     try {
         const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(req.body.student_id, req.body.subject_id, req.body.term_id, req.body.score)
         // console.log("status_code ===> ",status_code)
-        if (!canOperated) {
-            return res.status(status_code).send({
-                message: set_message,
-                data: null,
-                status_code: status_code
-            });
-        }
+        if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
+
         const check_student_subject = await studentService.checkIsStudentAddThisSubject(req.body.student_id, req.body.subject_id)
         console.log("check_student_subject ===> ", check_student_subject)
-        if (check_student_subject.status_code !== 200) {
-            return res.status(check_student_subject.status_code).send({
-                message: check_student_subject.set_message,
-                data: null,
-                status_code: check_student_subject.status_code,
-            });
-        }
+        if (check_student_subject.status_code !== 200) return res.status(check_student_subject.status_code).send(new ErrorRes(check_student_subject.set_message, check_student_subject.status_code))
 
         const cal_gradeDetail = await gradeDetailUtil.calculateGradeDetail(req.body.score)
         const inputData = {
@@ -347,18 +271,11 @@ exports.updateGradeDetail = async (req, res) => {
             individualHooks: true
         });
 
-        res.status(200).send({
-            message: "Update gradeDetail successfully",
-            data: gradeDetail,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Update gradeDetail successfully", gradeDetail))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -369,25 +286,12 @@ exports.deleteAllGradeDetail = async (req, res) => {
             truncate: true,
             restartIdentity: true
         })
-        if (gradeDetails.length === 0) {
-            return res.status(200).send({
-                message: "GradeDetail data is empty.",
-                data: null,
-                status_code: 200
-            })
-        }
-        res.status(200).send({
-            message: "Deleting gradeDetails successfully.",
-            data: gradeDetails,
-            status_code: 200
-        });
+        if (gradeDetails.length === 0) return res.status(200).send(new SuccessRes("GradeDetail data is empty."))
+
+        res.status(200).send(new SuccessRes("Deleting gradeDetails successfully.", gradeDetails))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -398,22 +302,11 @@ exports.deleteGradeDetailById = async (req, res) => {
         term_id: req.body.term_id
     }
     try {
-        if (!inputData.student_id || !inputData.subject_id || !inputData.term_id) {
-            return res.status(400).send({
-                message: `Enter data.`,
-                data: null,
-                status_code: 400
-            });
-        }
+        if (!inputData.student_id || !inputData.subject_id || !inputData.term_id)
+            return res.status(400).send(new ErrorRes(`Enter data.`, 400))
 
         const grade = await GradeDetail.findOne(inputData);
-        if (!grade) {
-            return res.status(404).send({
-                message: `GradeDetail is not found`,
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!grade) return res.status(404).send(new ErrorRes(`GradeDetail is not found`, 404))
 
         const result = await GradeDetail.destroy({
             where: {
@@ -422,19 +315,13 @@ exports.deleteGradeDetailById = async (req, res) => {
                 term_id: inputData.term_id,
             }
         })
-        res.status(200).send({
-            message: `GradeDetail deleted successfully`,
-            data: result,
-            status_code: 200
-        })
+
+        res.status(200).send(new SuccessRes(`GradeDetail deleted successfully`, result))
+
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 

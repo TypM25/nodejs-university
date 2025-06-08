@@ -9,21 +9,13 @@ checkDuplicateUsername = async (req, res, next) => {
     //ใช้findOne หาwhere username
     let user = await User.findOne({ where: { username: req.body.username } })
     if (user) {
-      res.status(400).send({
-        message: "Failed! Username is already in use!",
-        data: null,
-        status_code: 400
-      });
+      res.status(400).send(new ErrorRes("Failed! Username is already in use!", 400))
       return;
     }
     next();
   }
-  catch (err) {
-    res.status(500).send({
-      message: "ERROR : " + err.message,
-      data: null,
-      status_code: 500
-    })
+  catch (error) {
+    res.status(500).send(new ErrorCatchRes(error))
   }
 }
 
@@ -33,12 +25,7 @@ checkRolesExisted = (req, res, next) => {
     for (let i = 0; i < req.body.role_name.length; i++) {
       //ถ้าไม่เจอค่าใน ROLE
       if (!ROLES.includes(req.body.role_name[i])) {
-        res.status(400).send({
-          message: "Please select role.",
-          // message: "Failed! Role does not exist = " + req.body.role_name[i],
-          data: null,
-          status_code: 400
-        });
+        res.status(400).send(new ErrorRes("Please select role.", 400))
         return;
       }
     }
@@ -53,4 +40,3 @@ const verifySignUp = {
 };
 
 module.exports = verifySignUp;
-                                                                                                                                                                                                                

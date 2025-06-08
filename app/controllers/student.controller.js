@@ -2,6 +2,7 @@
 const db = require("../models");
 const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 var jwt = require("jsonwebtoken");
 const UpdateStudent = db.updateStudent;
@@ -20,24 +21,15 @@ const GradeTerm = db.gradeTerm
 
 //########################## CREATE ##########################
 exports.createStudent = async (req, res) => {
-    if (!req.body.student_first_name?.trim() || !req.body.student_last_name?.trim()) {
-        return res.status(400).send({
-            message: "First name and last name cannot be empty!",
-            data: null,
-            status_code: 400
-        });
-    }
-
+    if (!req.body.student_first_name?.trim() || !req.body.student_last_name?.trim())
+        return res.status(404).send(new ErrorRes("First name and last name cannot be empty!", 404))
 
     try {
         const term = await semesterService.checkSemester()
         if (!term || !term.activeTerm) {
-            return res.status(200).send({
-                isOpen: false,
-                message: "Do not has active semester.",
-                data: null,
-                status_code: 200
-            });
+            const response = new SuccessRes("Do not has active semester.")
+            response.isOpen = false
+            return res.status(200).send(response)
         }
         const student = {
             user_id: req.body.user_id ? req.body.user_id : req.user_id,
@@ -47,13 +39,9 @@ exports.createStudent = async (req, res) => {
             term_id: term.activeTerm.term_id
         };
 
-        if (!student.user_id || isNaN(student.user_id) /*เมือ่ไม่ใข่ตัวเลข*/) {
-            return res.status(400).send({
-                message: "Please enter valid id number values.",
-                data: null,
-                status_code: 400
-            });
-        }
+        if (!student.user_id || isNaN(student.user_id) /*เมือ่ไม่ใข่ตัวเลข*/)
+            return res.status(400).send(new ErrorRes("Please enter valid id number values.", 400))
+
 
         const user = await User.findOne({
             where: { user_id: student.user_id },
@@ -66,18 +54,10 @@ exports.createStudent = async (req, res) => {
         });
 
         if (!user) {
-            return res.status(404).send({
-                message: "Username is not found.",
-                data: null,
-                status_code: 404
-            })
+            return res.status(404).send(new ErrorRes("Username is not found.", 404))
         }
         else if (user?.roles.find((r) => r.name !== "student")) {
-            return res.status(404).send({
-                message: "This user is not student role.",
-                data: null,
-                status_code: 404
-            })
+            return res.status(404).send(new ErrorRes("This user is not student role.", 404))
         }
 
         const oldStudent = await Student.findOne({
@@ -87,22 +67,15 @@ exports.createStudent = async (req, res) => {
             }
         })
         if (oldStudent) {
-            return res.status(400).send({
-                message: "นักเรียนซ้ำ",
-                data: null,
-                status_code: 400
-            });
+            return res.status(400).send(new ErrorRes("Student name is already existed.", 400))
         }
         else {
             let result = null;
             result = await Student.create(student)
             user.student_id = result.student_id
             await user.save();
-            res.status(200).send({
-                message: "New student added successfully",
-                data: result,
-                status_code: 200
-            });
+            res.status(200).send(new SuccessRes("New student added successfully", result))
+
 
             //create updateStudent Table
             update_data = {
@@ -117,18 +90,14 @@ exports.createStudent = async (req, res) => {
 
                 await UpdateStudent.create(update_data);
                 console.log("Update Data", update_data);
-            } catch (err) {
+            } catch (error) {
                 console.error("Error inserting into UpdateStudent:", err);
             }
         }
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message || "Some error occurred while creating the Student.",
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -153,30 +122,19 @@ exports.findAll = async (req, res) => {
             return data;
         });
 
-        res.status(200).send({
-            data: formattedResult,
-            status_code: 200
-        }
-        )
+        res.status(200).send(new SuccessRes("Fetching successful.", formattedResult))
+
     }
     catch (error) {
-        res.status(500).send({
-            message: "An error occurred: " + error.message,
-            data: null,
-            status_code: 500
-        });
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findStudentByStudentId = async (req, res) => {
     const id = req.params.id?.trim()
-    if (!id || id.trim() === '' || isNaN((id)) || id === 0) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!id || id.trim() === '' || isNaN((id)) || id === 0)
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
     try {
         const result = await Student.findByPk(id, {
             attributes: ["student_id", "student_first_name", "student_last_name", "create_by", "user_id"],
@@ -194,39 +152,20 @@ exports.findStudentByStudentId = async (req, res) => {
             }]
         })
 
-        if (result) {
-            res.status(200).send({
-                data: result,
-                status_code: 200
-            });
-        }
-        else {
-            res.status(404).send({
-                message: "This user_id is not registered as a student.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (result) return res.status(200).send(new SuccessRes("Fetching successful.", result))
+
+        res.status(404).send(new ErrorRes("This user_id is not registered as a student.", 404))
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        }
-        )
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findStudentByUserId = async (req, res) => {
     const user_id = req.params.user_id
-    if (!user_id || isNaN(user_id) || user_id === 0) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!user_id || isNaN(user_id) || user_id === 0)
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
     try {
         const result = await Student.findOne({
             where: { user_id: user_id },
@@ -244,53 +183,28 @@ exports.findStudentByUserId = async (req, res) => {
             }]
         })
 
-        if (result) {
-            res.status(200).send({
-                data: result,
-                status_code: 200
-            });
-        }
-        else {
-            res.status(404).send({
-                message: "This user_id is not registered as a student.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (result) return res.status(200).send(new SuccessRes("Fetching successful.", result))
+
+
+        res.status(404).send(new ErrorRes("This user_id is not registered as a student.", 404))
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        }
-        )
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findGpaStudent = async (req, res) => {
     const id = req.params.id
-    if (!id || isNaN(id) || id === 0) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!id || isNaN(id) || id === 0)
+        return res.status(404).send(new ErrorRes("Please enter valid number values.", 404))
+
     try {
         const grade = await GradeTerm.findOne({ where: { student_id: id } })
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: grade,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Fetching successful.", grade))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error" + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -325,10 +239,8 @@ exports.searchStudent = async (req, res) => {
                 data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
                 return data;
             });
-            res.status(200).send({
-                data: formattedResult,
-                status_code: 200
-            });
+
+            res.status(200).send(new SuccessRes("Fetching successful.", formattedResult))
             return
         }
         //ถ้ามี ให้เสิชตาม searchCondition
@@ -337,13 +249,9 @@ exports.searchStudent = async (req, res) => {
             order: [['student_id', `${data.sort}`]]
         });
         //ถ้าไม่มีข้อมูลนิสิต
-        if (!student) {
-            return res.status(404).send({
-                message: "No data.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!student) return res.status(404).send(new ErrorRes("No data.", 404))
+
+
         //ถ้ามีข้อมูลนิสิตให้ แปลงวัน วัน-เดือน-ปี
         const formattedResult = student.map(data => {
             data = data.get();
@@ -352,17 +260,11 @@ exports.searchStudent = async (req, res) => {
             return data;
         });
 
-        res.status(200).send({
-            data: formattedResult,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Fetching successful.", formattedResult))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -374,29 +276,17 @@ exports.changeStudentName = async (req, res) => {
         student_last_name: req.body.student_last_name
     }
     if (!data.student_id || isNaN((data.student_id))) {
-        return res.status(400).send({
-            message: "Please enter valid id number values.",
-            data: null,
-            status_code: 400
-        })
+        return res.status(400).send(new ErrorRes("Please enter valid id number values.", 400))
     }
     else if (!data.student_first_name || !data.student_last_name) {
-        return res.status(400).send({
-            message: "Please enter your first name and your last name",
-            data: null,
-            status_code: 400
-        })
+        return res.status(400).send(new ErrorRes("Please enter your first name and your last name", 400))
     }
 
     try {
         const findId = await Student.findByPk(data.student_id)
         if (findId) {
             const data_update = await Student.update(data, { where: { student_id: data.student_id } })
-            res.status(200).send({
-                message: "Update leaw ka",
-                data: data_update,
-                status_code: 200
-            })
+            res.status(200).send(new SuccessRes("Update leaw ka", data_update))
 
             //update updateStudent Table
             update_data = {
@@ -410,25 +300,16 @@ exports.changeStudentName = async (req, res) => {
             try {
                 await UpdateStudent.create(update_data);
                 console.log("Update Data", update_data);
-            } catch (err) {
+            } catch (error) {
                 console.error("Error updating into UpdateStudent:", err);
             }
         }
         else {
-            res.status(404).send({
-                message: "This id is not found.",
-                data: null,
-                status_code: 404
-            })
+            res.status(404).send(new ErrorRes("This id is not found.", 404))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "ERROR : " + err.message,
-            data: null,
-            status_code: 500
-
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -437,23 +318,14 @@ exports.addSubjectByStudent = async (req, res) => {
     const id_stud = req.params.student_id
     const id_sub = req.params.subject_id
 
-    if (id_stud === 0 || id_sub === 0 || isNaN(id_stud) || isNaN(id_sub)) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (id_stud === 0 || id_sub === 0 || isNaN(id_stud) || isNaN(id_sub))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
     try {
         //เช็คว่ามี id studentมั้ย
         const student = await Student.findByPk(id_stud)
-        if (!student) {
-            return res.status(404).send({
-                message: "This id student is not found.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!student)
+            return res.status(404).send(new ErrorRes("This id student is not found.", 404))
 
         const subject = await Subject.findByPk(id_sub, {
             include: {
@@ -461,13 +333,8 @@ exports.addSubjectByStudent = async (req, res) => {
                 as: "students"
             }
         })
-        if (!subject) {
-            return res.status(404).send({
-                message: "This id subject is not found.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!subject) return res.status(404).send(new ErrorRes("This id subject is not found.", 404))
+
         //เช็คว่าเคยลงทะเบียนยัง
         const checkAdd = await SubjectStudent.findOne({
             where: {
@@ -475,13 +342,9 @@ exports.addSubjectByStudent = async (req, res) => {
                 subject_id: id_sub
             }
         })
-        if (checkAdd) {
-            return res.status(409).send({
-                message: "You have already enrolled in this subject.",
-                data: null,
-                status_code: 409
-            })
-        }
+        if (checkAdd)
+            return res.status(409).send(new ErrorRes("You have already enrolled in this subject.", 409))
+
 
 
         //นับว่าเต็มยัง
@@ -496,11 +359,7 @@ exports.addSubjectByStudent = async (req, res) => {
 
         //เช็คจำนวนของนิสิต
         if (count_sub_stud.length >= 5) {
-            return res.status(409).send({
-                message: "This subject is full.",
-                data: null,
-                status_code: 409
-            })
+            return res.status(409).send(new ErrorRes("This subject is full.", 409))
         }
         else {
             //เพิ่มวิชา
@@ -513,20 +372,14 @@ exports.addSubjectByStudent = async (req, res) => {
                     student_id: id_stud,
                     subject_id: id_sub,
                 });
-                res.status(200).send({
-                    message: "Add new subject successfully.",
-                    data: subject,
-                    status_code: 200
-                })
+
+                res.status(200).send(new SuccessRes("Add new subject successfully.", subject))
+
             }
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "ERROR : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -536,13 +389,9 @@ exports.removeSubjectByStudent = async (req, res) => {
     const id_stud = req.params.student_id
     const id_sub = req.params.subject_id
 
-    if (id_stud === 0 || id_sub === 0 || isNaN(id_stud) || isNaN(id_sub)) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (id_stud === 0 || id_sub === 0 || isNaN(id_stud) || isNaN(id_sub))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
 
     try {
         const findIdStudent = await Student.findByPk(id_stud)
@@ -551,11 +400,7 @@ exports.removeSubjectByStudent = async (req, res) => {
             const findIdSubject = await Subject.findByPk(id_sub)
             // console.log("Subject id is " + add.subject_id)
             if (findIdSubject) {
-                res.status(200).send({
-                    message: "Subject removed from student.",
-                    data: findIdSubject,
-                    status_code: 200
-                })
+                res.status(200).send(new SuccessRes("Subject removed from student.", findIdSubject))
 
                 await TermHistory.destroy({
                     where: {
@@ -567,28 +412,16 @@ exports.removeSubjectByStudent = async (req, res) => {
 
             }
             else {
-                res.status(404).send({
-                    message: "This id subject is not found.",
-                    data: null,
-                    status_code: 404
-                })
+                res.status(404).send(new ErrorRes("This id subject is not found.", 404))
             }
         }
         else {
-            res.status(404).send({
-                message: "This id student is not found.",
-                data: null,
-                status_code: 404
-            })
+            res.status(404).send(new ErrorRes("This id student is not found.", 404))
         }
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: "ERROR : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -598,13 +431,9 @@ exports.checkIsStudentAddThisSubject = async (req, res) => {
     const id_stud = Number(req.params.student_id)
     const id_sub = Number(req.params.subject_id)
 
-    if (id_stud === 0 || id_sub === 0 || isNaN(id_stud) || isNaN(id_sub)) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (id_stud === 0 || id_sub === 0 || isNaN(id_stud) || isNaN(id_sub))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
 
     try {
         const studentMixSubject = await Student.findOne(
@@ -621,13 +450,9 @@ exports.checkIsStudentAddThisSubject = async (req, res) => {
             },
         )
 
-        if (!studentMixSubject) {
-            return res.status(404).send({
-                message: "Student not found",
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!studentMixSubject)
+            return res.status(404).send(new ErrorRes("Student not found", 404))
+
 
         let result = studentMixSubject.toJSON()
 
@@ -643,27 +468,17 @@ exports.checkIsStudentAddThisSubject = async (req, res) => {
         //ถ้าลงทะเบียนเเล้ว
         if (subject.length > 0) {
             result.subjects = subject
-            res.status(409).send({
-                status: true,
-                data: result,
-                status_code: 409
-            })
+            const response = new ErrorRes("Student not found", 409, result)
+            response.status = true
+            res.status(409).send(response)
         }
         else {
             result.subject = null
-            res.status(200).send({
-                message: "This student does not has this subject.",
-                data: null,
-                status_code: 200,
-            })
+            res.status(200).send(new SuccessRes("This student does not has this subject."))
         }
     }
     catch (error) {
-        res.status(500).send({
-            message: "ERROR : " + error.message,
-            data: null,
-            status_code: 500
-        })
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -671,22 +486,11 @@ exports.checkIsStudentAddThisSubject = async (req, res) => {
 exports.deleteStudentById = async (req, res) => {
     const id = req.params.id
     try {
-        if (!id) {
-            return res.status(400).send({
-                message: `Enter student id.`,
-                data: null,
-                status_code: 400
-            });
-        }
+        if (!id) return res.status(400).send(`Enter student id.`, 400)
+
 
         const student = await Student.findByPk(id);
-        if (!student) {
-            return res.status(404).send({
-                message: `Student id=${id} not found`,
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!student) return res.status(404).send(`Student id=${id} not found`, 404)
 
         //delete UpdateStudent Table
         update_data = {
@@ -700,23 +504,15 @@ exports.deleteStudentById = async (req, res) => {
         try {
             await UpdateStudent.create(update_data);
             console.log("Update Data", update_data);
-        } catch (err) {
+        } catch (error) {
             console.error("Error deleting into UpdateStudent:", err);
         }
 
         const result = await Student.destroy({ where: { student_id: id } })
-        res.status(200).send({
-            message: `Student id : ${id} deleted successfully`,
-            data: result,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes(`Student id : ${id} deleted successfully`, result))
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }

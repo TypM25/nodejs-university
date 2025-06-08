@@ -78,7 +78,7 @@ module.exports = (sequelize, Sequelize) => {
                 // const gradeTerm = await GradeTerm.create(inputData);
                 // console.log("Creating gradeTerm successfully : ", gradeTerm)
             }
-            catch (err) {
+            catch (error) {
                 console.log("Error: ", err)
             }
         });
@@ -109,7 +109,7 @@ module.exports = (sequelize, Sequelize) => {
             console.log("Updated gradeTerm successfully: ", gradeTerm);
 
         }
-        catch (err) {
+        catch (error) {
             console.log("Error: ", err)
         }
 
@@ -130,8 +130,8 @@ module.exports = (sequelize, Sequelize) => {
             });
 
             console.log("All gradeTerms have been deleted.");
-        } catch (err) {
-            console.error("Error deleting gradeTerms:", err.message);
+        } catch (error) {
+            console.error("Error deleting gradeTerms:", error.message);
         }
     }
     )

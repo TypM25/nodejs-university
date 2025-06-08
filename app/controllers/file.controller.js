@@ -3,6 +3,7 @@ const Op = db.Sequelize.Op;
 const fs = require("fs");
 const baseUrl = "/files/";
 const { where } = require("sequelize");
+const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.js')
 
 const uploadFile = require("../middleware/upload");
 
@@ -15,14 +16,8 @@ exports.upload = async (req, res) => {
     try {
         await uploadFile(req, res);
 
-        if (!req.file) {
-            return res.status(400).send({
-                message: "Please upload a file!",
-                data: null,
-                status_code: 400
-            })
-        }
-
+        if (!req.file)  return res.status(400).send(new ErrorRes("Please upload a file!", 400))
+           
         const existingImage = await Image.findOne({
             where: { user_id: req.user_id }
         });
@@ -45,22 +40,10 @@ exports.upload = async (req, res) => {
         };
 
         await Image.create(data)
+        res.status(200).send(new SuccessRes("Uploaded the file successfully: " + req.file.originalname))
 
-        res.status(200).send({
-            message: "Uploaded the file successfully: " + req.file.originalname,
-            data: null,
-            status_code: 200
-        });
-
-
-    } catch (err) {
-        if (err.code == "LIMIT_FILE_SIZE") {
-            return res.status(500).send({
-                message: "File size cannot be larger than 2MB!",
-                data: null,
-                status_code: 500
-            });
-        }
+    } catch (error) {
+        if (err.code == "LIMIT_FILE_SIZE") return res.status(500).send(new ErrorRes("File size cannot be larger than 2MB!", 500))
 
         res.status(500).send({
             message: `Could not upload the file: ${req.file.originalname}. ${err}`,
@@ -80,25 +63,11 @@ exports.findImage = async (req, res) => {
             where: { user_id: id },
             attributes: ["name", "url"],
         })
-        if (!image || image.length === 0) {
-            res.status(200).send({
-                message: "Empty.",
-                data: null,
-                status_code: 200
-            });
-        }
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: image,
-            status_code: 200
-        });
+        if (!image || image.length === 0) return res.status(200).send(new SuccessRes("Empty."))
+        res.status(200).send(new SuccessRes("Fetching successfully.", image))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "An error occurred: " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -107,7 +76,7 @@ exports.findMultiImage = async (req, res) => {
     const userIds = raw_data.map((data) => data.user_id);
 
     try {
-          const image = await Image.findAll({
+        const image = await Image.findAll({
             where: {
                 user_id: userIds.length < 2
                     ? userIds[0] // ถ้ามีแค่ 1 คน ใช้ค่าเดียว
@@ -127,25 +96,12 @@ exports.findMultiImage = async (req, res) => {
         //     order: [["user_id", "ASC"]],
 
         // })
-        if (!image || image?.length === 0) {
-            res.status(200).send({
-                message: "Empty.",
-                data: null,
-                status_code: 200
-            });
-        }
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: image,
-            status_code: 200
-        });
+        if (!image || image?.length === 0) return res.status(200).send(new SuccessRes("Empty."))
+        res.status(200).send(new SuccessRes("Fetching successfully.", image))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "An error occurred: " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -156,11 +112,7 @@ exports.getListFiles = (req, res) => {
 
     fs.readdir(directoryPath, function (err, files) {
         if (err) {
-            res.status(500).send({
-                message: "Unable to scan files!",
-                data: null,
-                status_code: 500
-            });
+             res.status(500).send(new ErrorRes("Unable to scan files!", 500))
         }
 
         let fileInfos = [];
@@ -184,8 +136,8 @@ exports.download = (req, res) => {
     const fileName = req.params.name;
     const directoryPath = __basedir + "/resources/static/assets/uploads/";
 
-    res.download(directoryPath + fileName, fileName, (err) => {
-        if (err) {
+    res.download(directoryPath + fileName, fileName, (error) => {
+        if (error) {
             res.status(500).send({
                 message: "Could not download the file. " + err,
                 data: null,

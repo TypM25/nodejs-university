@@ -4,6 +4,7 @@ const config = require("../config/auth.config");
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 const { where } = require("sequelize");
+const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.js')
 
 const User = db.user;
 const Role = db.role;
@@ -19,21 +20,12 @@ exports.signup = async (req, res) => {
     }
     //เช็คไม่ได้ค่าที่ไม่กรอก
     for (const [key, value] of Object.entries(raw_user)) {
-        if (!value) {
-            return res.status(400).send({
-                message: `Please enter ${key}.`,
-                data: null,
-                status_code: 400
-            });
-        }
+        if (!value) return res.status(400).send(new ErrorRes(`Please enter ${key}.`, 400))
+
     }
-    if (raw_user.password !== raw_user.confirmPassword) {
-        return res.status(400).send({
-            message: `Password and confirm password do not match.`,
-            data: null,
-            status_code: 400
-        });
-    }
+
+    if (raw_user.password !== raw_user.confirmPassword) return res.status(400).send(new ErrorRes(`Password and confirm password do not match.`, 400))
+
     const new_user = {
         username: req.body.username,
         password: bcrypt.hashSync(req.body.password, 10),
@@ -45,21 +37,13 @@ exports.signup = async (req, res) => {
         const role = await Role.findOne({ where: { name: new_user.role_name } })
 
         if (!role) {
-            return res.status(404).send({
-                message: "Role not found.",
-                data: null,
-                status_code: 404
-            });
+            return res.status(404).send(new ErrorRes("Role not found.", 404))
         }
         //ใส่[] เพราะ setRolesเป็น arrayเสมอ เพราะเชื่อมแบบmany to many 
         user.setRoles([role]) //มันจะไปเชื่อมกันเองใน  thrugh: "user_roles"
         user.save()
 
-        res.status(200).send({
-            message: "Created successfully!",
-            data: user,
-            status_code: 200
-        });
+        res.status(404).send(new SuccessRes("Role not found.", 404))
 
         // const user = await User.create(new_user)
         // if (req.body.role_name) {
@@ -85,12 +69,8 @@ exports.signup = async (req, res) => {
         //     status_code: 200
         // });
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -114,27 +94,15 @@ exports.signin = async (req, res) => {
         })
 
         //ถ้าหาusernameไม่เจอ
-        if (!user) {
-            return res.status(404).send({
-                message: "User not found.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!user) return res.status(404).send(new ErrorRes("User not found.", 404))
+
         //ตรวจสอบว่า รหัสผ่านที่ผู้ใช้กรอกตรงกับรหัสผ่านที่เก็บในฐานข้อมูล
         var passwordIsValid = bcrypt.compareSync(
             data_login.password,
             user.password
         );
         //false ถ้า password ไม่ถูกต้อง
-        if (!passwordIsValid) {
-            return res.status(401).send({
-                message: "Invalid Password!",
-                data: null,
-                status_code: 401
-            });
-        }
-
+        if (!passwordIsValid) return res.status(401).send(new ErrorRes("Invalid Password!", 401))
         // สร้าง token
         const token = jwt.sign({
             user_id: user.user_id,
@@ -153,51 +121,34 @@ exports.signin = async (req, res) => {
                 authorities.push(roles[i].name.toLowerCase());
             }
             //เมื่อlogin show
-            res.status(200).send({
-                data: {
-                    user_id: user.user_id,
-                    username: user.username,
-                    role_name: authorities, // เดิมที ทำรองรับroleที่เป็นลิส
-                    accessToken: token,
-                    refreshToken: refreshToken,
-                },
-                status_code: 200
-            });
+            res.status(200).send(new SuccessRes("Signin successfull.", {
+                user_id: user.user_id,
+                username: user.username,
+                role_name: authorities, // เดิมที ทำรองรับroleที่เป็นลิส
+                accessToken: token,
+                refreshToken: refreshToken,
+            }))
         })
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
-
 }
 
 exports.signout = async (req, res) => {
     try {
         req.session = null;
-        return res.status(200).send({
-            message: "You've been signed out!",
-            data: null,
-            status_code: 200
-        });
-    } catch (err) {
-        this.next(err);
+        return res.status(200).send(new SuccessRes("You've been signed out!"))
+    } catch (error) {
+        this.next(error);
     }
 };
 
 exports.refreshToken = async (req, res) => {
     const { refreshToken: requestToken } = req.body;
     //no token send
-    if (requestToken == null) {
-        return res.status(403).json({
-            message: "Refresh Token is required!",
-            data: null,
-            status_code: 403
-        });
-    }
+    if (requestToken == null) return res.status(403).send(new ErrorRes("Refresh Token is required!", 403))
+
 
     try {
         //หาrefresh token in database
@@ -205,25 +156,12 @@ exports.refreshToken = async (req, res) => {
         console.log(refreshToken)
 
         //ถ้าไม่เจอในฐานข้อมูล
-        if (!refreshToken) {
-            res.status(403).json({
-                message: "Refresh token is not in database!",
-                data: null,
-                status_code: 403
-            });
-            return;
-        }
+        if (!refreshToken) return res.status(403).send(new ErrorRes("Refresh token is not in database!", 403))
 
         //ถ้าrefresh tokenหมดอายุเเล้ว
         if (RefreshToken.verifyExpiration(refreshToken)) {
             RefreshToken.destroy({ where: { username: refreshToken.username } });
-
-            res.status(403).json({
-                message: "Refresh token was expired. Please make a new signin request",
-                data: null,
-                status_code: 403
-            });
-            return;
+            return res.status(403).send(new ErrorRes("Refresh token was expired. Please make a new signin request", 403))
         }
 
         //ถ้าrefreshtokenยังไม่หมดอายุ
@@ -245,18 +183,17 @@ exports.refreshToken = async (req, res) => {
         },
             config.secret, { expiresIn: config.jwtExpiration });
 
+
+
         return res.status(200).json({
             accessToken: newAccessToken,
             refreshToken: refreshToken.token,
             status_code: 200
         });
-    } catch (err) {
-        console.error("Signup/Signin Error:", err);
-        res.status(500).send({
-            message: err.message || err.toString() || "Unknown error",
-            data: null,
-            status_code: 500
-        });
+    } catch (error) {
+
+        res.status(500).send(new ErrorCatchRes(error))
+
     }
 };
 

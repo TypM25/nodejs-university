@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
 const db = require("../models/index.js");
 const User = db.user;
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 // { ตัวแปร } ดึงค่าเฉพาะ key นั้น ๆ" ออกมาจาก object ใหญ่
 const { TokenExpiredError } = jwt;
@@ -13,25 +14,14 @@ verifyToken = (req, res, next) => {
     let token = req.headers["x-access-token"];
 
     //เมื่อไม่ใส่token ในheader
-    if (!token) {
-        return res.status(403).send({
-            message: "No token provided!",
-            data: null,
-            status_code: 403
-        });
-    }
+    if (!token) return res.status(403).send(new ErrorRes("No token provided!", 403))
+
+
 
     jwt.verify(token,
         config.secret,
-        (err, decoded) => {
-            if (err) {
-                return res.status(401).send({
-                    message: "Unauthorized!",
-                    data: null,
-                    status_code: 401
-
-                });
-            }
+        (error, decoded) => {
+            if (error) return res.status(401).send(new ErrorRes("Unauthorized!", 401))
             req.username = decoded.username;
             req.user_id = decoded.user_id;
             console.log('Decoded token:', decoded);
@@ -51,27 +41,15 @@ isUser = async (req, res, next) => {
                 next();
                 return;
             }
-            res.status(403).send({
-                message: "Require some role!",
-                data: null,
-                status_code: 403
-            });
+            res.status(403).send(new ErrorRes("Require some role!", 403))
             return;
         }
         catch {
-            res.status(404).send({
-                message: "No any roles.",
-                data: null,
-                status_code: 404
-            });
+            res.status(404).send(new ErrorRes("No any roles.", 404))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -84,28 +62,15 @@ isStudent = async (req, res, next) => {
             if (roles.some(role => role.name === "student")) {
                 return next();
             }
-
-            res.status(403).send({
-                message: "Require student role!",
-                data: null,
-                status_code: 403
-            });
+            res.status(403).send(new ErrorRes("Require student role!", 403))
             return;
         }
         catch {
-            res.status(403).send({
-                message: "Require another role to access.",
-                data: null,
-                status_code: 403
-            });
+            res.status(403).send(new ErrorRes("Require another role to access.", 403))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -116,30 +81,18 @@ isTeacher = async (req, res, next) => {
         let user = await User.findByPk(req.user_id)
         try {
             let roles = await user.getRoles()
-             if (roles.some(role => role.name === "teacher")) {
+            if (roles.some(role => role.name === "teacher")) {
                 return next();
             }
-            res.status(403).send({
-                message: "Require teacher role!",
-                data: null,
-                status_code: 403
-            });
+            res.status(403).send(new ErrorRes("Require teacher role!", 403))
             return;
         }
         catch {
-            res.status(403).send({
-                message: "Require another role to access.",
-                data: null,
-                status_code: 403
-            });
+            res.status(403).send(new ErrorRes("Require another role to access.", 403))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -151,30 +104,19 @@ isAdmin = async (req, res, next) => {
         console.log(user)
         try {
             let roles = await user.getRoles()
-              if (roles.some(role => role.name === "admin")) {
+            if (roles.some(role => role.name === "admin")) {
                 return next();
             }
-            res.status(403).send({
-                message: "Require admin role!",
-                data: null,
-                status_code: 403
-            });
+
+            res.status(403).send(new ErrorRes("Require admin role!", 403))
             return;
         }
         catch {
-            res.status(404).send({
-                message: "No this role.",
-                data: null,
-                status_code: 404
-            });
+            res.status(404).send(new ErrorRes("No this role.", 404))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 

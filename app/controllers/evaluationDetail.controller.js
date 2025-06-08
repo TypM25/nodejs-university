@@ -3,6 +3,7 @@ const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
 var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const evaluationDetailService = require('../services/evaluationDetail.service.js');
 const studentService = require('../services/student.service.js');
@@ -12,20 +13,11 @@ const EvaluationDetail = db.evaluationDetail
 //########################## CREATE ##########################
 exports.createEvaluationDetail = async (req, res) => {
     const { canOperated, status_code, set_message } = await evaluationDetailService.checkDataNotfound(req.body.student_id, req.body.teacher_id, req.body.term_id, req.body.question_id)
-    if (!canOperated) {
-        return res.status(status_code).send({
-            message: set_message,
-            data: null,
-            status_code: status_code
-        });
-    }
+    if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
+
     const check_student_teacher = await studentService.checkStudentTeacher(req.body.student_id, req.body.teacher_id)
     if (check_student_teacher.canOperated === false) {
-        return res.status(check_student_teacher.status_code).send({
-            message: check_student_teacher.set_message,
-            data: null,
-            status_code: check_student_teacher.status_code
-        });
+        return res.status(check_student_teacher.status_code).send(new ErrorRes(set_mescheck_student_teacher.set_messageage, check_student_teacher.status_code))
     }
 
     const inputData = {
@@ -45,27 +37,13 @@ exports.createEvaluationDetail = async (req, res) => {
                 term_id: inputData.term_id,
             }
         })
-        if (checkData.length > 0) {
-            return res.status(409).send({
-                message: "Already create evaluationDetail with this question.",
-                data: null,
-                status_code: 409
-            });
-        }
-        const evaluation_detail = await EvaluationDetail.create(inputData)
+        if (checkData.length > 0) return res.status(409).send(new ErrorRes("Already create evaluationDetail with this question.", 409))
 
-        res.status(200).send({
-            message: "Creating evaluation_detail successfully.",
-            data: evaluation_detail,
-            status_code: 200
-        });
+        const evaluation_detail = await EvaluationDetail.create(inputData)
+        res.status(200).send(new SuccessRes("Creating evaluation_detail successfully.", evaluation_detail))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -79,33 +57,17 @@ exports.createMultiEvaluationDetail = async (req, res) => {
         score: Number(data.score),
     }));
     //ถ้ายังไม่ครบ10 
-    if (inputData.length !== 10) {
-        return res.status(400).send({
-            message: "กรุณาประเมินทุกข้อ",
-            data: null,
-            status_code: 400
-        });
-    }
+    if (inputData.length !== 10) return res.status(400).send(new ErrorRes("กรุณาประเมินทุกข้อ", 400))
+
     for (let item of inputData) {
         //เช็คข้อมูลที่ไม่มีในdb
         const { canOperated, status_code, set_message } = await evaluationDetailService.checkDataNotfound(item.student_id, item.teacher_id, item.term_id, item.question_id)
-        if (!canOperated) {
-            return res.status(status_code).send({
-                message: set_message,
-                data: null,
-                status_code: status_code
+        if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
 
-            });
-        }
         //เช็คว่านิสิตได้เรียนกับครูคนนี้มั้ย
         const check_student_teacher = await studentService.checkStudentTeacher(item.student_id, item.teacher_id)
-        if (check_student_teacher.canOperated === false) {
-            return res.status(check_student_teacher.status_code).send({
-                message: check_student_teacher.set_message,
-                data: null,
-                status_code: check_student_teacher.status_code
-            });
-        }
+        if (check_student_teacher.canOperated === false) return res.status(check_student_teacher.status_code).send(new ErrorRes(check_student_teacher.set_message, check_student_teacher.status_code))
+
         //เช็คว่าตอบ10 คำถามไปยัง
         const checkAlreadyVote = await EvaluationDetail.findAll({
             where: {
@@ -115,13 +77,8 @@ exports.createMultiEvaluationDetail = async (req, res) => {
             }
         })
         //ถ้าครบ
-        if (checkAlreadyVote.length === 10) {
-            return res.status(409).send({
-                message: "This student is already answer.",
-                data: null,
-                status_code: 409
-            });
-        }
+        if (checkAlreadyVote.length === 10) return res.status(409).send(new ErrorRes("This student is already answer.", 409))
+
         //เช็คตอบคำถามซ้ำ
         const checkEvaDetail = await EvaluationDetail.findOne({
             where: {
@@ -132,31 +89,18 @@ exports.createMultiEvaluationDetail = async (req, res) => {
             }
         })
         //ถ้าซ้ำ
-        if (checkEvaDetail) {
-            return res.status(409).send({
-                message: "คุณประเมินอาจารย์คำถามซ้ำ",
-                data: null,
-                status_code: 409
-            });
-        }
+        if (checkEvaDetail) return res.status(409).send(new ErrorRes("คุณประเมินอาจารย์คำถามซ้ำ", 409))
     }
 
     try {
         const evaluation_detail = await EvaluationDetail.bulkCreate(inputData, {
             individualHooks: true // เรียกใช้ afterCreate สำหรับแต่ละรายการ
         });
-        res.status(200).send({
-            message: "Create evaluationDetail successfully!",
-            data: evaluation_detail,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Create evaluationDetail successful!", evaluation_detail))
+
     }
-    catch (err) {
-        return res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -164,18 +108,10 @@ exports.createMultiEvaluationDetail = async (req, res) => {
 exports.findAllEnvaluationDetail = async (req, res) => {
     try {
         const evaluation_detail = await EvaluationDetail.findAll();
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: evaluation_detail,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Fetching successful!", evaluation_detail))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -195,18 +131,10 @@ exports.findEnvaluationDetailById = async (req, res) => {
                 term_id: pk.term_id
             }
         });
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: evaluation_detail,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Fetching successful!", evaluation_detail))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -249,25 +177,12 @@ exports.checkAlreadyAnswer = async (req, res) => {
                 term_id: inputData.term_id
             }
         })
-        if (checkAlreadyVote.length === teacherIdArray.length * 10) {
-            return res.status(409).send({
-                message: "This student is already answer.",
-                data: null,
-                status_code: 409
-            });
-        }
-        res.status(200).send({
-            message: "This student is not answer yet.",
-            data: null,
-            status_code: 200
-        });
+        if (checkAlreadyVote.length === teacherIdArray.length * 10) return res.status(409).send(new ErrorRes("This student is already answer.", 409))
+
+        res.status(200).send(new SuccessRes("This student is not answer yet."))
     }
-    catch (err) {
-        return res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -279,18 +194,11 @@ exports.deleteAllEvaluationDetail = async (req, res) => {
             truncate: true,
             restartIdentity: true
         })
-        res.status(200).send({
-            message: "Destroy all evaluation_detail successfully.",
-            data: evaluation_detail,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Destroy all evaluation_detail successfully.", evaluation_detail))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -310,17 +218,9 @@ exports.deleteEvaluationDetail = async (req, res) => {
                 term_id: pk.term_id
             }
         });
-        res.status(200).send({
-            message: "Destroy evaluation successfully.",
-            data: evaluation,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Destroy evaluation successful.", evaluation))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }

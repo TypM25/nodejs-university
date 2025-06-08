@@ -1,5 +1,6 @@
 
 const db = require("../models/index.js");
+const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.js')
 
 const gradeTermService = require('../services/gradeTerm.service.js');
 const GradeTerm = db.gradeTerm
@@ -7,25 +8,12 @@ const GradeTerm = db.gradeTerm
 exports.findAllGradeTerm = async (req, res) => {
     try {
         const gradeDetails = await GradeTerm.findAll()
-        if (gradeDetails.length === 0) {
-            return res.status(200).send({
-                message: "GradeTerm data is empty.",
-                data: null,
-                status_code: 200
-            })
-        }
-        res.status(200).send({
-            message: "Fetching gradeDetail successfully.",
-            data: gradeDetails,
-            status_code: 200
-        });
+        if (gradeDetails.length === 0) return res.status(200).send(new SuccessRes("GradeTerm data is empty."))
+
+        res.status(200).send(new SuccessRes("Fetching gradeDetail successfully.", gradeDetails))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+      res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -67,9 +55,9 @@ exports.findAllGradeTerm = async (req, res) => {
 //             status_code: 200
 //         });
 //     }
-//     catch (err) {
+//     catch (error) {
 //         res.status(500).send({
-//             message: "Error : " + err.message,
+//             message: "Error : " + error.message,
 //             data: null,
 //             status_code: 500
 //         });
@@ -83,25 +71,11 @@ exports.deleteAllGradeTerm = async (req, res) => {
             truncate: true,
             restartIdentity: true
         })
-        if (gradeDetails.length === 0) {
-            return res.status(200).send({
-                message: "GradeTerm data is empty.",
-                data: null,
-                status_code: 200
-            })
-        }
-        res.status(200).send({
-            message: "Deleting gradeDetails successfully.",
-            data: gradeDetails,
-            status_code: 200
-        });
+        if (gradeDetails.length === 0) return res.status(200).send(new SuccessRes("GradeTerm data is empty."))
+        res.status(200).send(new SuccessRes("Deleting gradeDetails successfully.", gradeDetails))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+      res.status(500).send(new ErrorCatchRes(error))
     }
 }
 

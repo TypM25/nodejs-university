@@ -2,6 +2,7 @@ const { where, cast, col } = require('sequelize');
 const db = require("../models");
 const dayjs = require('dayjs');
 const Op = db.Sequelize.Op;
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const searchUtil = require('../utils/search.util.js');
 const semesterService = require('../services/semester.service.js');
@@ -21,23 +22,12 @@ exports.createTeacher = async (req, res) => {
         teacher_last_name: req.body.teacher_last_name,
         create_by: req.user_id,
     }
-    if (isNaN(data.user_id)) {
-        return res.status(400).send({
-            message: "User id is not a number!",
-            data: null,
-            status_code: 400
-        });
+    if (isNaN(data.user_id))
+        return res.status(400).send(new ErrorRes("User id is not a number!", 400))
 
-    }
 
-    if (!data.teacher_first_name || !data.teacher_last_name) {
-        res.status(400).send({
-            message: "Content can not be empty!",
-            data: null,
-            status_code: 400
-        });
-        return;
-    }
+    if (!data.teacher_first_name || !data.teacher_last_name)
+        return res.status(400).send(new ErrorRes("Content can not be empty!", 400))
 
     try {
         //ตรวจuser
@@ -52,18 +42,10 @@ exports.createTeacher = async (req, res) => {
         });
 
         if (!user) {
-            return res.status(404).send({
-                message: "Username is not found.",
-                data: null,
-                status_code: 404
-            })
+            return res.status(404).send(new ErrorRes("Username is not found.", 404))
         }
         else if (user?.roles.find((r) => r.name !== "teacher")) {
-            return res.status(404).send({
-                message: "This user is not teacher role.",
-                data: null,
-                status_code: 404
-            })
+            return res.status(404).send(new ErrorRes("This user is not teacher role.", 404))
         }
 
         const oldTeacher = await Teacher.findOne({
@@ -73,30 +55,18 @@ exports.createTeacher = async (req, res) => {
             }
         })
         if (oldTeacher) {
-            res.status(400).send({
-                message: "อาจารย์ซ้ำ",
-                data: null,
-                status_code: 400
-            });
+            res.status(404).send(new ErrorRes("อาจารย์ซ้ำ", 404))
         }
 
 
 
         else {
             const result = await Teacher.create(data)
-            res.status(200).send({
-                message: "New teacher added successfully",
-                data: result,
-                status_code: 200
-            });
+            res.status(200).send(new SuccessRes("New teacher added successfully", result))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message || "Some error occurred while creating the Teacher.",
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -113,29 +83,18 @@ exports.findAllTeacher = async (req, res) => {
             data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
-        res.status(200).send({
-            data: formattedResult,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Fetching successfully", formattedResult))
     }
     catch (error) {
-        res.status(500).send({
-            message: "An error occurred: " + error.message,
-            data: null,
-            status_code: 500
-        });
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findTeacherByTeacherId = async (req, res) => {
     const id = Number(req.params.id);
-    if (!id || isNaN((id))) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!id || isNaN((id)))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
 
     try {
         const { activeTerm } = await semesterService.checkSemester()
@@ -149,39 +108,22 @@ exports.findTeacherByTeacherId = async (req, res) => {
         });
 
 
-        if (result) {
-            res.status(200).send({
-                data: result,
-                status_code: 200
-            });
-        }
-        else {
-            res.status(404).send({
-                message: "This teacher id does not exist.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (result) return res.status(200).send(new SuccessRes("Fetching successfully", result))
+
+        res.status(404).send(new ErrorRes("This teacher id does not exist.", 404))
+
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        }
-        )
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findTeacherByUserId = async (req, res) => {
     const user_id = req.params.user_id
-    if (!user_id || isNaN(user_id) || user_id === 0) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!user_id || isNaN(user_id) || user_id === 0)
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
     try {
         const { activeTerm } = await semesterService.checkSemester()
 
@@ -196,25 +138,14 @@ exports.findTeacherByUserId = async (req, res) => {
             }]
         })
         if (!result) {
-            return res.status(404).send({
-                message: "This user_id is not registered as a teacher.",
-                data: result,
-                status_code: 404
-            })
+            return res.status(404).send(new ErrorRes("This user_id is not registered as a teacher.", 404))
         }
-        res.status(200).send({
-            data: result,
-            status_code: 200
-        });
+
+        res.status(200).send(new SuccessRes("Fetching successful", result))
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: err.message,
-            data: null,
-            status_code: 500
-        }
-        )
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -225,11 +156,7 @@ exports.findIsTeacherAddThisSubject = async (req, res) => {
     }
 
     if (data.teacher_id === 0 || !data.subject_id === 0 || isNaN(data.teacher_id) || isNaN(data.subject_id)) {
-        return res.status(400).send({
-            message: "Please enter numbers.",
-            data: null,
-            status_code: 400
-        })
+        return res.status(400).send(new ErrorRes("Please enter numbers.", 400))
     }
 
     try {
@@ -245,13 +172,9 @@ exports.findIsTeacherAddThisSubject = async (req, res) => {
             }]
         });
 
-        if (!teacherMixSubject) {
-            return res.status(404).send({
-                message: "Teacher not found",
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!teacherMixSubject)
+            return res.status(404).send(new ErrorRes("Teacher not found", 404))
+
 
         const result = teacherMixSubject.toJSON();
 
@@ -261,29 +184,20 @@ exports.findIsTeacherAddThisSubject = async (req, res) => {
 
         if (subject.length > 0) {
             result.subjects = subject;
-            res.status(200).send({
-                status: true,
-                data: result,
-                status_code: 200
-            });
+            const response = new SuccessRes("Fetching successful", result)
+            response.status = true
+            res.status(200).send(response)
         }
         else {
             result.subject = null;
-            res.status(200).send({
-                message: "This teacher does not have this subject.",
-                data: null,
-                status_code: 200,
-            });
+            res.status(200).send(new SuccessRes("This teacher does not have this subject."))
         }
     }
     catch (error) {
-        res.status(500).send({
-            message: "ERROR : " + error.message,
-            data: null,
-            status_code: 500
-        });
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
+
 //########################## SEARCH ##########################
 exports.searchTeacher = async (req, res) => {
     const data = {
@@ -308,12 +222,7 @@ exports.searchTeacher = async (req, res) => {
                 data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
                 return data;
             });
-            return res.status(200).send({
-                message: "Fetching successfully.",
-                data: formattedResult,
-                status_code: 200
-            });
-
+            return res.status(200).send(new SuccessRes("Fetching successfully.", formattedResult))
         }
         const result = await Teacher.findAll({
             where: searchCondition,
@@ -325,21 +234,10 @@ exports.searchTeacher = async (req, res) => {
             data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
-        return res.status(200).send({
-            message: "Fetching successfully.",
-            data: formattedResult,
-            status_code: 200
-        });
-
-
+        return res.status(200).send(new SuccessRes("Fetching successfully.", formattedResult))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "ERROR : " + err.message,
-            data: null,
-            status_code: 500
-
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 
 }
@@ -353,38 +251,21 @@ exports.changeTeacherName = async (req, res) => {
         teacher_last_name: req.body.teacher_last_name
     }
     if (!data.teacher_id || isNaN((data.teacher_id))) {
-        return res.status(400).send({
-            message: "Please enter valid id number values.",
-            data: null,
-            status_code: 400
-        })
+        return res.status(400).send(new ErrorRes("Please enter valid id number values.", 400))
     }
     else if (!data.teacher_first_name || !data.teacher_last_name) {
-        return res.status(400).send({
-            message: "Please enter your first name and your last name",
-            data: null,
-            status_code: 400
-        })
+        return res.status(400).send(new ErrorRes("Please enter your first name and your last name", 400))
     }
 
     try {
         const findId = await Teacher.findByPk(data.teacher_id)
         if (findId) {
             const data_update = await Teacher.update(data, { where: { teacher_id: data.teacher_id } })
-            res.status(200).send({
-                message: "Update leaw ka",
-                data: data_update,
-                status_code: 200
-            })
+            res.status(200).send(new SuccessRes("Update leaw ka", data_update))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "ERROR : " + err.message,
-            data: null,
-            status_code: 500
-
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -394,11 +275,7 @@ exports.removeSubjectByTeacher = async (req, res) => {
     const subject_id = req.params.subject_id;
 
     if (teacher_id === 0 || subject_id === 0 || isNaN(teacher_id) || isNaN(subject_id)) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        });
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
     }
 
     try {
@@ -406,35 +283,19 @@ exports.removeSubjectByTeacher = async (req, res) => {
         if (findIdTeacher) {
             const findIdSubject = await Subject.findByPk(subject_id);
             if (findIdSubject) {
-                res.status(200).send({
-                    message: "Subject removed from teacher.",
-                    data: findIdSubject,
-                    status_code: 200
-                });
+                res.status(200).send(new SuccessRes("Subject removed from teacher.", findIdSubject))
                 await findIdTeacher.setSubject(null); // Remove the subject from teacher
             }
             else {
-                res.status(404).send({
-                    message: "This id subject is not found.",
-                    data: null,
-                    status_code: 404
-                });
+                res.status(404).send(new ErrorRes("This id subject is not found.", 404))
             }
         }
         else {
-            res.status(404).send({
-                message: "This id teacher is not found.",
-                data: null,
-                status_code: 404
-            });
+            res.status(404).send(new ErrorRes("This id teacher is not found.", 404))
         }
     }
-    catch (err) {
-        res.status(500).send({
-            message: "ERROR : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -455,32 +316,16 @@ exports.checkIsTeacherAddThisSubject = async (req, res) => {
         }
         );
         if (!teacher) {
-            return res.status(404).send({
-                message: "Teacher not found.",
-                data: null,
-                status_code: 404
-            });
+            return res.status(404).send(new ErrorRes("Teacher not found.", 404))
         }
         if (teacher.subjects !== null) {
-            return res.status(409).send({
-                message: "You already added this subject.",
-                data: null,
-                status_code: 409
-            });
+            return res.status(409).send(new ErrorRes("You already added this subject.", 409))
         }
 
-        res.status(200).send({
-            message: "You can add this subject.",
-            data: null,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("You can add this subject."))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -489,54 +334,27 @@ exports.addTeachSubject = async (req, res) => {
     const teacher_id = req.body.teacher_id;
     const subject_id = req.body.subject_id;
     try {
-        if (!teacher_id || !subject_id) {
-            return res.status(400).send({
-                message: "Content can not be empty!",
-                data: null,
-                status_code: 400
-            });
-        }
+        if (!teacher_id || !subject_id) return res.status(400).send(new ErrorRes("Content can not be empty!", 400))
+
         const teacher = await Teacher.findByPk(teacher_id);
-        if (!teacher) {
-            return res.status(404).send({
-                message: "Teacher id is not found!",
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!teacher) return res.status(400).send(new ErrorRes("Teacher id is not found!", 400))
+
 
         const subject = await Subject.findByPk(subject_id);
-        if (!subject) {
-            return res.status(404).send({
-                message: "Subject id is not found!",
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!subject) return res.status(404).send(new ErrorRes("Subject id is not found!", 404))
 
-        if (teacher.subject_id === subject_id) {
-            return res.status(400).send({
-                message: "You already add this subject.",
-                data: null,
-                status_code: 400
-            });
-        }
+
+        if (teacher.subject_id === subject_id) return res.status(400).send(new ErrorRes("You already add this subject.", 400))
+
 
         teacher.subject_id = subject_id;
         const result = await teacher.save(); // Save the new data back to the database
 
-        res.status(200).send({
-            message: "Teacher add subject successfully.",
-            data: result,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Teacher add subject successfully.", result))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -544,36 +362,19 @@ exports.addTeachSubject = async (req, res) => {
 exports.deleteTeacherById = async (req, res) => {
     const id = req.params.id
     try {
-        if (!id) {
-            return res.status(400).send({
-                message: `Enter Teacher id.`,
-                data: null,
-                status_code: 400
-            });
-        }
+        if (!id) return res.status(400).send(new ErrorRes(`Enter Teacher id.`, 400))
+
 
         const teacher = await Teacher.findByPk(id);
-        if (!teacher) {
-            return res.status(404).send({
-                message: `Teacher id=${id} not found`,
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!teacher) return res.status(404).send(new ErrorRes(`Teacher id=${id} not found`, 404))
+
+
 
         const result = await Teacher.destroy({ where: { teacher_id: id } })
-        res.status(200).send({
-            message: `Teacher id : ${id} deleted successfully`,
-            data: result,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes(`Teacher id : ${id} deleted successfully`, result))
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }

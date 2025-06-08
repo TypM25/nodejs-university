@@ -2,7 +2,7 @@ const { where } = require("sequelize");
 const db = require("../models");
 const dayjs = require('dayjs');
 const Op = db.Sequelize.Op;
-
+const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.js')
 
 const searchUtil = require('../utils/search.util.js');
 const teacherRatingService = require('../services/teacherRating.service.js');
@@ -24,18 +24,11 @@ exports.createTeacherRating = async (req, res) => {
 
     try {
         const teach_rating = await TeacherRating.create(inputData)
-        res.status(200).send({
-            message: "Create teacherRating successfully",
-            data: teach_rating,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Create teacherRating successfully", teach_rating))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -44,18 +37,10 @@ exports.findAllTeacherRating = async (req, res) => {
 
     try {
         const teach_rating = await TeacherRating.findAll()
-        res.status(200).send({
-            message: "Find all teacherRating successfully",
-            data: teach_rating,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Find all teacherRating successfully", teach_rating))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+       res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -64,12 +49,8 @@ exports.updateTeacherRating = async (req, res) => {
     try {
 
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -92,30 +73,18 @@ exports.searchTeacherRatig = async (req, res) => {
             const teach_rating = await TeacherRating.findAll({
                 order: [["rating_score", "ASC"]]
             })
-            return res.status(200).send({
-                message: "Fetching successfully",
-                data: teach_rating,
-                status_code: 200
-            });
+            return res.status(200).send(new SuccessRes( "Fetching successfully", teach_rating))
+          
         }
         const teach_rating2 = await TeacherRating.findAll({
             where: searchCondition,
             order: [["rating_score", "ASC"]]
 
         })
-        res.status(200).send({
-            message: "Fetching successfully",
-            data: teach_rating2,
-            status_code: 200
-        });
-
+        res.status(200).send(new SuccessRes( "Fetching successfully", teach_rating2))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+      res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -126,17 +95,9 @@ exports.deleteAllTeacherRating = async (req, res) => {
             truncate: true,
             restartIdentity: true
         })
-        res.status(200).send({
-            message: "Destroy all teacher_rating successfully.",
-            data: evaluation_detail,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes( "Destroy all teacher_rating successfully.", evaluation_detail))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+      res.status(500).send(new ErrorCatchRes(error))
     }
 }

@@ -3,6 +3,7 @@ const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
 var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const searchUtil = require('../utils/search.util.js');
 const semesterService = require('../services/semester.service.js');
@@ -26,49 +27,20 @@ exports.createSemester = async (req, res) => {
     const digits = term_id.toString().split('').map(Number);
     term.term_name = "เทอม " + digits[0] + " ปีการศีกษา " + digits[1] + digits[2] + digits[3] + digits[4]
 
-    if (!req.body) {
-        res.status(400).send({
-            message: "Content can not be empty!",
-            data: null,
-            status_code: 400
-        });
-        return;
-    }
+    if (!req.body) return res.status(400).send(new ErrorRes("Content can not be empty!", 400))
 
     try {
 
         const checkSemester = await Semester.findOne({ where: { term_name: term.term_name, term_id: term.term_id } })
-        if (checkSemester) {
-            return res.status(400).send({
-                message: "เทอมซ้ำจ้า",
-                data: null,
-                status_code: 400
-            })
-        }
+        if (checkSemester) return res.status(400).send(new ErrorRes("This semester is already existed.", 400))
+
 
         const new_semester = await Semester.create(term)
-
-        res.status(200).send({
-            message: "New term added successfully",
-            data: new_semester,
-            status_code: 200
-        });
-
+        res.status(200).send(new SuccessRes("New term added successfully", new_semester))
     }
-    catch (err) {
-        if (err.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).send({
-                message: "term_id already exists.",
-                data: null,
-                status_code: 400
-            });
-        }
-
-        res.status(500).send({
-            message: "Error : " + err.message || "Some error occurred while creating the Student.",
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        if (err.name === 'SequelizeUniqueConstraintError') return res.status(500).send(new ErrorRes("term_id alread", 500))
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 //########################## FIND ##########################
@@ -83,52 +55,28 @@ exports.findAllSemester = async (req, res) => {
             data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: formattedResult,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Fetching successfuly.", formattedResult))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findSemesterById = async (req, res) => {
     const term_id = req.body.term_id
-    if (!term_id || isNaN((term_id))) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!term_id || isNaN((term_id)))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
+
     try {
         const semester = await Semester.findByPk(term_id)
         console.log("semester ----> ", JSON.parse(JSON.stringify(semester)))
-        if (!semester) {
-            return res.status(404).send({
-                message: "Can not find this term_id.",
-                data: null,
-                status_code: 404
-            })
-        }
-        res.status(200).send({
-            message: "Fetching data successfull.",
-            data: semester,
-            status_code: 200
-        })
+        if (!semester) return res.status(404).send(new ErrorRes("Can not find this term_id.", 404))
+
+        res.status(200).send(new SuccessRes("Fetching data successfull.", semester))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 //########################## SEARCH ##########################
@@ -191,13 +139,9 @@ exports.searchSemester = async (req, res) => {
             order: [['term_id', `${data.sort}`]]
         });
 
-        if (!term) {
-            return res.status(404).send({
-                message: "No data.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!term) return res.status(404).send(new ErrorRes("No data.", 404))
+
+
 
         const formattedResult = term.map(data => {
             data = data.get();
@@ -207,17 +151,11 @@ exports.searchSemester = async (req, res) => {
             data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
-        res.status(200).send({
-            data: formattedResult,
-            status_code: 200
-        })
+
+        res.status(200).send(new SuccessRes("Fetching data successful.", formattedResult))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -226,27 +164,17 @@ exports.checkSemester = async (req, res) => {
     try {
         const term = await semesterService.checkSemester()
         if (!term) {
-            return res.status(200).send({
-                isOpen: false,
-                message: term.message,
-                data: null,
-                status_code: 200
-            });
+            const response = new SuccessRes(term.message)
+            response.isOpen = false
+            return res.status(200).send(response)
         }
 
-        res.status(200).send({
-            isOpen: true,
-            message: "Semester is currently open.",
-            data: term.activeTerm,
-            status_code: 200
-        });
+        const response = new SuccessRes("Semester is currently open.", term.activeTerm)
+        response.isOpen = true
+        res.status(200).send(response)
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -254,35 +182,17 @@ exports.checkSemester = async (req, res) => {
 //########################## DELETE ##########################
 exports.deleteSemester = async (req, res) => {
     const term_id = req.body.term_id
-    if (!term_id || isNaN((term_id))) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!term_id || isNaN((term_id)))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
     try {
         const semester = await Semester.destroy({ where: { term_id: term_id } })
-        if (!semester) {
-            return res.status(400).send({
-                message: `No data for delete.`,
-                data: semester,
-                status_code: 400
-            })
-        }
-        res.status(200).send({
-            message: `Term id : ${term_id} deleted successfully`,
-            data: semester,
-            status_code: 200
-        })
+        if (!semester) return res.status(400).send(new ErrorRes("No data for delete.", 400))
 
+
+        res.status(200).send(new SuccessRes(`Term id : ${term_id} deleted successfully`, semester))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -297,23 +207,13 @@ exports.updateSemester = async (req, res) => {
         ...(req.body.end_date && { end_date: req.body.end_date }),
     };
 
-    if (!id || isNaN((id))) {
-        return res.status(400).send({
-            message: "Please enter valid number values.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!id || isNaN((id)))
+        return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
 
     try {
         const findTermId = await Semester.findByPk(id)
-        if (!findTermId) {
-            return res.status(404).send({
-                message: "Term not found.",
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!findTermId) return res.status(404).send(new ErrorRes("Term not found.", 404))
+
         //เขียนแบบนี้จะไม่สามารถเปลี่ยน PKได้
         // console.log(findTermId)
         // for (const [key, value] of Object.entries(update_data)) {
@@ -326,17 +226,9 @@ exports.updateSemester = async (req, res) => {
 
 
         const update_semester = await Semester.update(update_data, { where: { term_id: id } })
-        res.status(200).send({
-            message: "Update term sucessfully.",
-            data: update_semester,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Update term sucessfully.", update_semester))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }

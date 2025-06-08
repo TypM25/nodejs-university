@@ -4,6 +4,7 @@ var bcrypt = require("bcryptjs");
 const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
 const dayjs = require('dayjs');
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const searchUtil = require('../utils/search.util.js');
 
@@ -11,45 +12,25 @@ const User = db.user;
 const Role = db.role;
 
 exports.allAccess = (req, res) => {
-    res.status(200).send({
-        message: "Public Content.",
-        data: null,
-        status_code: 200
-    });
+    res.status(200).send(new SuccessRes("Public Content."))
 };
 
 
 exports.userBoard = (req, res) => {
-    res.status(200).send({
-        message: "User Content.",
-        data: null,
-        status_code: 200
-    });
+    res.status(200).send(new SuccessRes("User Content."))
 };
 
 
 exports.teacherBoard = (req, res) => {
-    res.status(200).send({
-        message: "Teacher Content.",
-        data: null,
-        status_code: 200
-    });
+    res.status(200).send(new SuccessRes("Teacher Content."))
 };
 
 exports.studentBoard = (req, res) => {
-    res.status(200).send({
-        message: "Student Content.",
-        data: null,
-        status_code: 200
-    });
+    res.status(200).send(new SuccessRes("Student Content."))
 };
 
 exports.adminBoard = (req, res) => {
-    res.status(200).send({
-        message: "Admin Content.",
-        data: null,
-        status_code: 200
-    });
+    res.status(200).send(new SuccessRes("Admin Content."))
 };
 
 //########################## FIND ##########################
@@ -72,53 +53,28 @@ exports.findAllUser = async (req, res) => {
             return data;
         });
 
-        res.status(200).send({
-            data: formattedResult,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Fetching succesful.", formattedResult))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
 exports.findByUserId = async (req, res) => {
     const id = req.body.id
     console.log('Received id:', id);
-    if (!id || isNaN(Number(id))) {
-        return res.status(400).send({
-            message: "Enter user id.",
-            data: null,
-            status_code: 400
-        })
-    }
+    if (!id || isNaN(Number(id))) return res.status(400).send(new ErrorRes("Enter user id.", 400))
+
+
     try {
         const user = await User.findByPk(id)
-        if (!user) {
-            return res.status(404).send({
-                message: "User id is not found.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!user) return res.status(404).send(new ErrorRes("User id is not found.", 404))
 
-        res.status(200).send({
-            data: user,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Fetching succesful.", user))
+
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -126,26 +82,14 @@ exports.findByUsername = async (req, res) => {
     const username = req.body.username
     try {
         const user = await User.findOne({ where: { username: username } })
-        if (!user) {
-            return res.status(404).send({
-                message: "Username is not found.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!user) return res.status(404).send(new ErrorRes("Username is not found.", 404))
 
-        res.status(200).send({
-            data: user,
-            status_code: 200
-        })
+
+
+        res.status(200).send(new SuccessRes("Fetching succesful.", user))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -175,10 +119,7 @@ exports.searchUser = async (req, res) => {
                 data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
                 return data;
             });
-            res.status(200).send({
-                data: formattedResult,
-                status_code: 200
-            })
+            res.status(200).send(new SuccessRes("Fetching succesful.", formattedResult))
             return
         }
         //ถ้าsearch
@@ -186,13 +127,9 @@ exports.searchUser = async (req, res) => {
             where: searchCondition,
             order: [['user_id', `${data.sort}`]]
         });
-        if (!user) {
-            return res.status(404).send({
-                message: "No data.",
-                data: null,
-                status_code: 404
-            })
-        }
+        if (!user) return res.status(404).send(new ErrorRes("No data.", 404))
+
+
 
         const formattedResult = user.map(data => {
             data = data.get();
@@ -200,17 +137,10 @@ exports.searchUser = async (req, res) => {
             data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
             return data;
         });
-        res.status(200).send({
-            data: formattedResult,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Fetching succesful.", formattedResult))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        })
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -224,13 +154,7 @@ exports.changePassword = async (req, res) => {
 
     //เมื่อไม่ได้กรอกข้อมูล
     for (const [key, value] of Object.entries(raw_data)) {
-        if (!value) {
-            return res.status(404).send({
-                message: `Please enter your ${key}.`,
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!value) return res.status(404).send(new ErrorRes(`Please enter your ${key}.`, 404))
     }
 
     try {
@@ -240,22 +164,11 @@ exports.changePassword = async (req, res) => {
         })
 
         //ถ้าไม่เจอข้อมูล
-        if (!user) {
-            return res.status(400).send({
-                message: "Username is not found.",
-                data: null,
-                status_code: 400
-            })
-        }
+        if (!user) return res.status(400).send(new ErrorRes("Username is not found.", 400))
 
         //หากรหัสผ่านไม่ตรง
-        if (raw_data.password !== raw_data.confirmPassword) {
-            return res.status(400).send({
-                message: "Password and ConfirmPassword is not matching.",
-                data: null,
-                status_code: 400
-            })
-        }
+        if (raw_data.password !== raw_data.confirmPassword)
+            return res.status(400).send(new ErrorRes("Password and ConfirmPassword is not matching.", 400))
 
         const new_data = {
             username: raw_data.username,
@@ -268,19 +181,11 @@ exports.changePassword = async (req, res) => {
         //     { password: new_data.password },
         //     { where: { username: new_data.username } }
         // )
-        res.status(200).send({
-            message: "Changed password successfully!",
-            data: null,
-            status_code: 200
-        })
-    }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
 
-        })
+        res.status(200).send(new SuccessRes("Changed password successfully!."))
+    }
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -291,20 +196,11 @@ exports.deleteAllUser = async (req, res) => {
         await User.destroy({
             where: {}
         })
-        res.status(200).send({
-            message: "Users were deleted successfully!",
-            data: null,
-            status_code: 200
-        });
 
+        res.status(200).send(new SuccessRes("Users were deleted successfully!"))
     }
-    catch (err) {
-        res.status(500).send({
-            message:
-                err.message || "Some error occurred while removing all Users.",
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };
 
@@ -312,27 +208,12 @@ exports.deleteUser = async (req, res) => {
     const id = req.body.user_id
     try {
         const user = await User.findOne({ where: { user_id: id } })
-        if (!user) {
-            return res.status(404).send({
-                message: "This user_id is not found.",
-                data: null,
-                status_code: 404
-            });
-        }
+        if (!user) return res.status(404).send(new ErrorRes("This user_id is not found.", 404))
 
         await User.destroy({ where: { user_id: id } })
-        res.status(200).send({
-            message: "Users were deleted successfully!",
-            data: user,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Users were deleted successfully!", user))
     }
-    catch (err) {
-        res.status(500).send({
-            message:
-                err.message || "Some error occurred while removing all Users.",
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 };

@@ -3,6 +3,7 @@ const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
 var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
+const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.js')
 
 const ChatHistory = db.chatHistory
 
@@ -19,17 +20,9 @@ exports.findChatHistory = async (req, res) => {
             },
             order: [['send_time', 'ASC']] // เรียงตามเวลาที่ส่ง
         })
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: chat,
-            status_code: 200
-        })
+        res.status(200).send(new SuccessRes("Fetching successful."))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }

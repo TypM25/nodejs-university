@@ -88,8 +88,8 @@ module.exports = (sequelize, Sequelize) => {
             }
 
 
-        } catch (err) {
-            console.error("Error:", err.message);
+        } catch (error) {
+            console.error("Error:", error.message);
         }
     });
 
@@ -107,8 +107,8 @@ module.exports = (sequelize, Sequelize) => {
             });
     
             console.log("All evaluations have been deleted.");
-        } catch (err) {
-            console.error("Error deleting evaluations:", err.message);
+        } catch (error) {
+            console.error("Error deleting evaluations:", error.message);
         }
     });
     

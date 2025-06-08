@@ -3,6 +3,7 @@ const Op = db.Sequelize.Op;
 const { where, cast, col } = require('sequelize');
 var jwt = require("jsonwebtoken");
 const dayjs = require('dayjs');
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const evaluationService = require('../services/evaluation.service.js');
 
@@ -11,14 +12,8 @@ const Evaluation = db.evaluation
 //########################## CREATE ##########################
 exports.createEnvaluation = async (req, res) => {
     const { canOperated, status_code, set_message } = await evaluationService.checkDataNotfound(req.body.student_id, req.body.teacher_id, req.body.term_id)
-    if (!canOperated) {
-        return res.status(status_code).send({
-            message: set_message,
-            data: null,
-            status_code: status_code
-        });
-    }
-    
+    if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
+
     const score = await evaluationService.calculateEvaluation(req.body.student_id, req.body.teacher_id, req.body.term_id)
     const inputData = {
         student_id: req.body.student_id,
@@ -26,7 +21,7 @@ exports.createEnvaluation = async (req, res) => {
         term_id: req.body.term_id,
         score: score.sum_score //เต็ม50
     }
-    
+
     try {
         // const checkData = await Evaluation.findAll({
         //     where:
@@ -45,18 +40,10 @@ exports.createEnvaluation = async (req, res) => {
         // }
 
         const evaluation = await Evaluation.create(inputData)
-        res.status(200).send({
-            message: "Creating evaluation successfully.",
-            data: evaluation,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Creating evaluation successfully.", evaluation))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -65,18 +52,10 @@ exports.findAllEnvaluation = async (req, res) => {
 
     try {
         const evaluation = await Evaluation.findAll()
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: evaluation,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Fetching successfully.", evaluation))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -84,18 +63,10 @@ exports.findEnvaluationById = async (req, res) => {
     const evaluation_id = req.body.evaluation_id
     try {
         const evaluation = await Evaluation.findByPk(evaluation_id)
-        res.status(200).send({
-            message: "Fetching successfully.",
-            data: evaluation,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Fetching successful.", evaluation))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 //########################## DELETE ##########################
@@ -104,20 +75,12 @@ exports.deleteAllEvaluation = async (req, res) => {
         const evaluation = await Evaluation.destroy({
             where: {},
             truncate: true,
-            restartIdentity: true 
+            restartIdentity: true
         })
-        res.status(200).send({
-            message: "Destroy all evaluation successfully.",
-            data: evaluation,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Destroy all evaluation successfully.", evaluation))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 
@@ -125,17 +88,9 @@ exports.deleteEvaluation = async (req, res) => {
     const evaluation_id = req.body.evaluation_id
     try {
         const evaluation = await Evaluation.destroy({ where: { evaluation_id: evaluation_id } })
-        res.status(200).send({
-            message: "Destroy evaluation successfully.",
-            data: evaluation,
-            status_code: 200
-        });
+        res.status(200).send(new SuccessRes("Destroy evaluation successfully.", evaluation))
     }
-    catch (err) {
-        res.status(500).send({
-            message: "Error : " + err.message,
-            data: null,
-            status_code: 500
-        });
+    catch (error) {
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }

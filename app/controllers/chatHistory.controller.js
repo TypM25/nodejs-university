@@ -7,6 +7,16 @@ const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.j
 
 const ChatHistory = db.chatHistory
 
+exports.AllChat = async (req, res) =>  {
+    try{
+        const result = ChatHistory.findAll()
+        res.status(200).send(new SuccessRes("Fetching successful.",result))
+    }
+    catch(error){
+         res.status(500).send(new ErrorCatchRes(error))
+    }
+}
+
 //########################## FIND ##########################
 exports.findChatHistory = async (req, res) => {
     const user1 = req.body.user1
@@ -20,7 +30,7 @@ exports.findChatHistory = async (req, res) => {
             },
             order: [['send_time', 'ASC']] // เรียงตามเวลาที่ส่ง
         })
-        res.status(200).send(new SuccessRes("Fetching successful."))
+        res.status(200).send(new SuccessRes("Fetching successful.", chat))
     }
     catch (error) {
         res.status(500).send(new ErrorCatchRes(error))

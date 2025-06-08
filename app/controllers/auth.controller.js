@@ -4,7 +4,7 @@ const config = require("../config/auth.config");
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 const { where } = require("sequelize");
-const { SuccessRes, ErrorRes, ErrorCatchRes} = require('../utils/response.util.js')
+const { SuccessRes, ErrorRes, ErrorCatchRes } = require('../utils/response.util.js')
 
 const User = db.user;
 const Role = db.role;
@@ -33,17 +33,19 @@ exports.signup = async (req, res) => {
     }
 
     try {
-        const user = await User.create(new_user)
+
         const role = await Role.findOne({ where: { name: new_user.role_name } })
 
         if (!role) {
             return res.status(404).send(new ErrorRes("Role not found.", 404))
         }
+
+        const user = await User.create(new_user)
         //ใส่[] เพราะ setRolesเป็น arrayเสมอ เพราะเชื่อมแบบmany to many 
         user.setRoles([role]) //มันจะไปเชื่อมกันเองใน  thrugh: "user_roles"
         user.save()
 
-        res.status(404).send(new SuccessRes("Role not found.", 404))
+        res.status(200).send(new SuccessRes("Register succesful."))
 
         // const user = await User.create(new_user)
         // if (req.body.role_name) {

@@ -170,6 +170,13 @@ exports.changePassword = async (req, res) => {
         if (raw_data.password !== raw_data.confirmPassword)
             return res.status(400).send(new ErrorRes("Password and ConfirmPassword is not matching.", 400))
 
+        var passwordIsValid = bcrypt.compareSync(
+            raw_data.password,
+            user.password
+        );
+
+        if(passwordIsValid) return res.status(400).send(new ErrorRes("Do not set repeated passwords.", 400))
+            
         const new_data = {
             username: raw_data.username,
             password: bcrypt.hashSync(raw_data.password, 10)

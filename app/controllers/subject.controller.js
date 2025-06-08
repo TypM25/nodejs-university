@@ -18,6 +18,7 @@ exports.createSubject = async (req, res) => {
     if (!req.body.subject_name || !req.body.credits)
         return res.status(409).send(new ErrorRes("Content can not be empty!", 409))
 
+    if (isNaN(Number(req.body.credits))) return res.status(400).send(new ErrorRes("Credits must be a number.", 400));
 
     const subject = {
         subject_name: req.body.subject_name.toLowerCase(),
@@ -240,6 +241,13 @@ exports.searchSubject = async (req, res) => {
 //########################## UPDATE ##########################
 exports.editSubject = async (req, res) => {
     const id = req.params.id
+
+    const inputData = {
+        subject_name: req.body.subject_name,
+        ...(req.body.credits.trim() !== "" && { credits: req.body.credits })
+    };
+
+
     try {
         if (!id) return res.status(400).send(new ErrorRes(`Enter subject id.`, 400))
 
@@ -247,10 +255,9 @@ exports.editSubject = async (req, res) => {
         if (!findId) return res.status(404).send(new ErrorRes("Can not find this subject id", 404))
 
 
-        await Subject.update(req.body, { where: { subject_id: id } })
-        console.log(req.body)
+        await Subject.update(inputData, { where: { subject_id: id } })
 
-        res.status(200).send(new SuccessRes("Subject was updated successfully!", req.body))
+        res.status(200).send(new SuccessRes("Subject was updated successfully!", inputData))
 
         update_data = {
             update_by: req.username,
@@ -267,7 +274,7 @@ exports.editSubject = async (req, res) => {
             console.error("Error deleting into UpdateSubject.", err);
         }
     }
-    catch {
+    catch(error){
         res.status(500).send(new ErrorCatchRes(error))
     }
 }
@@ -335,7 +342,7 @@ exports.deleteSubject = async (req, res) => {
 
     }
     catch (error) {
-         res.status(500).send(new ErrorCatchRes(error))
+        res.status(500).send(new ErrorCatchRes(error))
     }
 }
 

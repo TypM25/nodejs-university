@@ -13,6 +13,7 @@ const evaluationDetail = require("../controllers/evaluationDetail.controller.js"
 const teacherRating = require("../controllers/teacherRating.controller.js");
 const gradeDetail = require("../controllers/gradeDetail.controller.js");
 const gradeTerm = require("../controllers/gradeTerm.controller.js");
+const chatHistory = require("../controllers/chatHistory.controller.js");
 
 
 module.exports = function (app) {
@@ -232,4 +233,8 @@ module.exports = function (app) {
 
     app.delete("/admin/delete/all/teacherRating", [authJwt.verifyToken, authJwt.isAdmin],
         teacherRating.deleteAllTeacherRating);
+
+//................Admin-Chat...................\
+    app.get("/admin/all/chats", [authJwt.verifyToken, authJwt.isAdmin],
+        chatHistory.AllChat);
 };

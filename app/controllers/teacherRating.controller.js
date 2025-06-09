@@ -19,8 +19,8 @@ exports.createTeacherRating = async (req, res) => {
     }
     // console.log("Teacher_id : "+inputData.teacher_id)
     // console.log("term_id : "+inputData.term_id)
-    console.log("avg_score : " + avg_score)
-    console.log("rating_score : " + rating)
+    // console.log("avg_score : " + avg_score)
+    // console.log("rating_score : " + rating)
 
     try {
         const teach_rating = await TeacherRating.create(inputData)

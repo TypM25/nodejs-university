@@ -78,7 +78,7 @@ exports.createUpdateMultiGradeDetail = async (req, res) => {
             return res.status(400).send(new ErrorRes("Scores must less than 100.", 400))
         }
         //เช็คinputตัวไหน notfound
-        const { canOperated, status_code, set_message } = await gradeDetailService.calculateGradeDetail(item.student_id, item.subject_id, item.term_id, item.score)
+        const { canOperated, status_code, set_message } = await gradeDetailService.checkDataNotfound(item.student_id, item.subject_id, item.term_id, item.score)
         if (!canOperated) return res.status(status_code).send(new ErrorRes(set_message, status_code))
         //เช็คนิสิตคนนี้ได้ลงทะเบียนวิชานี้มั้ย
         const check_student_subject = await studentService.checkIsStudentAddThisSubject(item.student_id, item.subject_id)

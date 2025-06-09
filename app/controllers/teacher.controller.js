@@ -279,13 +279,16 @@ exports.removeSubjectByTeacher = async (req, res) => {
     }
 
     try {
-        const findIdTeacher = await Teacher.findByPk(teacher_id);
-        if (findIdTeacher) {
-            const findIdSubject = await Subject.findByPk(subject_id);
-            if (findIdSubject) {
-                res.status(200).send(new SuccessRes("Subject removed from teacher.", findIdSubject))
-                await findIdTeacher.setSubject(null); // Remove the subject from teacher
+        const teacher = await Teacher.findByPk(teacher_id);
+        if (teacher) {
+            const subject = await Subject.findByPk(subject_id);
+            if (subject) {
+                
+                teacher.subject_id = null;
+                await teacher.save();
+                res.status(200).send(new SuccessRes("Subject removed from teacher.", subject))
             }
+
             else {
                 res.status(404).send(new ErrorRes("This id subject is not found.", 404))
             }

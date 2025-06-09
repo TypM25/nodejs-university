@@ -117,10 +117,10 @@ exports.searchUser = async (req, res) => {
                 data = data.get();
                 data.createdAt = dayjs(data.createdAt).format('DD-MM-YYYY');
                 data.updatedAt = dayjs(data.updatedAt).format('DD-MM-YYYY');
-                return data;
+                return data; //return callback data
             });
-            res.status(200).send(new SuccessRes("Fetching succesful.", formattedResult))
-            return
+            return res.status(200).send(new SuccessRes("Fetching succesful.", formattedResult))
+            
         }
         //ถ้าsearch
         const user = await User.findAll({

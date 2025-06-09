@@ -400,15 +400,15 @@ exports.removeSubjectByStudent = async (req, res) => {
             const findIdSubject = await Subject.findByPk(id_sub)
             // console.log("Subject id is " + add.subject_id)
             if (findIdSubject) {
-                res.status(200).send(new SuccessRes("Subject removed from student.", findIdSubject))
-
                 await TermHistory.destroy({
                     where: {
                         student_id: id_stud,
                         subject_id: id_sub
                     }
                 });
+                //removeSubject ใช้ได้หากเป็นmany to many
                 await findIdStudent.removeSubject(findIdSubject)
+                 res.status(200).send(new SuccessRes("Subject removed from student.", findIdSubject))
 
             }
             else {

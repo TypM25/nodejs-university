@@ -46,7 +46,7 @@ exports.upload = async (req, res) => {
         if (error.code == "LIMIT_FILE_SIZE") return res.status(500).send(new ErrorRes("File size cannot be larger than 2MB!", 500))
 
         res.status(500).send({
-            message: `Could not upload the file: ${req.file.originalname}. ${err}`,
+            message: `Could not upload the file: ${req.file.originalname}. ${error}`,
             data: null,
             status_code: 500
         });
@@ -110,8 +110,8 @@ exports.findMultiImage = async (req, res) => {
 exports.getListFiles = (req, res) => {
     const directoryPath = __basedir + "/resources/static/assets/uploads/";
 
-    fs.readdir(directoryPath, function (err, files) {
-        if (err) {
+    fs.readdir(directoryPath, function (error, files) {
+        if (error) {
              res.status(500).send(new ErrorRes("Unable to scan files!", 500))
         }
 
@@ -139,7 +139,7 @@ exports.download = (req, res) => {
     res.download(directoryPath + fileName, fileName, (error) => {
         if (error) {
             res.status(500).send({
-                message: "Could not download the file. " + err,
+                message: "Could not download the file. " + error,
                 data: null,
                 status_code: 500
             });

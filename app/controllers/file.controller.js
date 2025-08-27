@@ -43,7 +43,7 @@ exports.upload = async (req, res) => {
         res.status(200).send(new SuccessRes("Uploaded the file successfully: " + req.file.originalname))
 
     } catch (error) {
-        if (err.code == "LIMIT_FILE_SIZE") return res.status(500).send(new ErrorRes("File size cannot be larger than 2MB!", 500))
+        if (error.code == "LIMIT_FILE_SIZE") return res.status(500).send(new ErrorRes("File size cannot be larger than 2MB!", 500))
 
         res.status(500).send({
             message: `Could not upload the file: ${req.file.originalname}. ${err}`,

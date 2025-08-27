@@ -13,20 +13,15 @@ const { createServer } = require("node:http");
 const server = createServer(app); //สร้าง HTTP server จาก Express
 const socketHandler = require("./socket"); // โหลดฟังก์ชัน socket จากไฟล์อื่น
 //สร้าง socket server
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL], // กำหนดให้ Next.js เข้าถึงได้
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+const corsOptions = {
+  origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+  methods: ["GET", "POST"],
+  credentials: true,
+};
 
+const io = new Server(server, { cors: corsOptions });
 socketHandler(io); // ส่ง io ไปให้จัดการต่อ
 //--------------------------------------------------------------------------------------------------------------
-var corsOptions = {
-  //อนุญาตให้ทุกโดเมนเข้าถึง API นี้ได้
-  origin: "*",
-};
 
 // ให้ Express เสิร์ฟไฟล์จากโฟลเดอร์นี้ที่ URL `/files`
 app.use(

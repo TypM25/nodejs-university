@@ -23,12 +23,13 @@ exports.upload = async (req, res) => {
         });
 
         // ถ้ามีรูปภาพแล้วให้ลบรูปภาพเก่า 
-        if (existingImage) {
+         if (existingImage) {
             const fs = require('fs');
-            const oldPath = existingImage.data;   // path ของไฟล์เก่า เช่น 'resources/uploads/image.png'
-            fs.unlinkSync(oldPath);              // ลบไฟล์เก่าออกจากโฟลเดอร์
-
-            await existingImage.destroy();      // ลบข้อมูลรูปภาพเก่าใน database
+            const oldPath = existingImage.data;
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+            await existingImage.destroy();
         }
 
         const data = {

@@ -15,7 +15,7 @@ const socketHandler = require("./socket"); // โหลดฟังก์ชั�
 //สร้าง socket server
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", process.env.DATABASE_URL], // กำหนดให้ Next.js เข้าถึงได้
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL], // กำหนดให้ Next.js เข้าถึงได้
     methods: ["GET", "POST"],
     credentials: true,
   },

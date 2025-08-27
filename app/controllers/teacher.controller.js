@@ -125,7 +125,10 @@ exports.findTeacherByUserId = async (req, res) => {
         return res.status(400).send(new ErrorRes("Please enter valid number values.", 400))
 
     try {
-        const { activeTerm } = await semesterService.checkSemester()
+        const { activeTerm, message } = await semesterService.checkSemester()
+        if (!activeTerm) {
+            return res.status(404).send(new ErrorRes(message, 404));
+        }
 
         const result = await Teacher.findOne({
             where: { user_id: user_id },

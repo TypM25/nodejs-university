@@ -16,7 +16,10 @@ const socketHandler = require('./socket'); // โหลดฟังก์ชั�
 //สร้าง socket server 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",  // กำหนดให้ Next.js เข้าถึงได้
+    origin: [
+      "http://localhost:3000",
+      "https://nodejs-university.vercel.app"
+    ], // กำหนดให้ Next.js เข้าถึงได้
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -78,7 +81,7 @@ require('./cron/semesterUpdate')(app);
 
 
 //เริ่มรันเซิร์ฟเวอร์
-const port = process.env.NODE_LOCAL_PORT;
+const port =  process.env.PORT || process.env.NODE_LOCAL_PORT || 9000;
 //เริ่มเปิดให้คนเข้ามาใช้งานได้
 server.listen(port, () => {
   console.log(`Server is running on port ${port}.`);

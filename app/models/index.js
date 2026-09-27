@@ -299,6 +299,6 @@ db.refreshToken.belongsTo(db.user, {
 
 
 //all role
-db.ROLES = ["student", "admin", "teacher"];
+db.ROLES = require("../initial/roles.data.js");
 
 module.exports = db;

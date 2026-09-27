@@ -12,7 +12,7 @@ const authConfig = require('./app/config/auth.config');
 const { Server } = require("socket.io");
 const { createServer } = require('node:http');
 const server = createServer(app); //สร้าง HTTP server จาก Express
-const socketHandler = require('./socket'); // โหลดฟังก์ชัน socket จากไฟล์อื่น
+const socketHandler = require('./socket'); // โหลดฟังก์ชัน socket 
 //สร้าง socket server 
 const io = new Server(server, {
   cors: {
@@ -48,16 +48,19 @@ app.use(express.urlencoded({ extended: true }));
 
 //------------------------------------------------เชื่อมต่อฐานข้อมูล และสร้าง Role-------------------------------------------------
 const db = require("./app/models");
-const Role = db.role;
+const initial = require("./app/initial");
 
-//true ลบdatabaseทุกครั้งที่run app 
+//true ลบdatabaseทุกครั้งที่run app
 db.sequelize.sync({ force: false })
   .then(async () => {
     console.log("Database synchronized without dropping tables!");
 
-    // ตรวจว่ามี Role แล้วหรือยัง
-    const count = await Role.count();
-    if (count === 0) {
+    // ตรวจว่ามี initial data (role, question) ครบแล้วหรือยัง
+    const [roleCount, questionCount] = await Promise.all([
+      db.role.count(),
+      db.question.count(),
+    ]);
+    if (roleCount === 0 || questionCount === 0) {
       await initial();
     }
   })
@@ -81,17 +84,8 @@ require('./cron/semesterUpdate')(app);
 
 
 //เริ่มรันเซิร์ฟเวอร์
-const port =  process.env.PORT || process.env.NODE_LOCAL_PORT || 9000;
+const port = process.env.PORT || process.env.NODE_LOCAL_PORT || 9000;
 //เริ่มเปิดให้คนเข้ามาใช้งานได้
 server.listen(port, () => {
   console.log(`Server is running on port ${port}.`);
 });
-
-async function initial() {
-  const roles = ["student", "admin", "teacher"];
-  for (const name of roles) {
-    await Role.findOrCreate({
-      where: { name },
-    });
-  }
-}
